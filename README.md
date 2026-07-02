@@ -96,15 +96,49 @@ Planned memory behavior:
 
 Graph traversal is load-bearing here, not decorative. A question like "Why did we replace Redis?" needs the structure Decision -> Context -> Consequence -> File. Vector search alone can find similar text, but it cannot reliably reconstruct the chain of reasoning.
 
+## Lifecycle
+
+Archeon does not just remember engineering knowledge — it actively manages its memory.
+
+- New information is **remembered** via Cognee ingestion.
+- User feedback **improves** important knowledge (`handle_feedback` → `improve()` / `memify()`).
+- Deleted source files are **forgotten** automatically (`handle_file_deletion` → `forget()`).
+- Stale knowledge is detected as **orphans** via pluggable rules (`detect_orphan_nodes`).
+- Orphaned reasoning is preserved by generating **draft ADRs** (`generate_adr`) instead of silently disappearing.
+
+### Lifecycle module
+
+```text
+archeon/lifecycle/
+    lifecycle.py         # handle_file_deletion, handle_feedback
+    provider.py          # MemoryProvider + CogneeProvider
+    orphan_detector.py   # OrphanRule plugins
+    adr.py               # ADR draft generator
+    status.py            # lifecycle_status() for CLI
+    watcher.py           # file deletion watcher
+```
+
+### Quick lifecycle demo
+
+```powershell
+pip install -e .[dev]
+pytest tests/test_forget.py tests/test_feedback.py tests/test_orphans.py
+python scripts/demo_lifecycle.py
+```
+
+With Cognee installed (`pip install -e .[cognee]`), the demo script also exercises `remember()` / `recall()`.
+
 ## Day 0 Scope
 
 This repository is the Day 0 foundation for the hackathon project:
 
 - GitHub-ready Python project structure
+- Graph schema (`schema.py`) and Cognee memory layer (`memory.py`)
+- Lifecycle engine (`archeon/lifecycle/`) with forget, feedback, orphans, ADR drafts
 - Typer CLI skeleton
 - Decision-rich demo repository fixture
 - README, `.gitignore`, and MIT license
-- No Cognee implementation yet
+- No Cognee ingestion wired into CLI yet
 
 The CLI commands intentionally print placeholders for now. The important Day 0 work is the shape of the project and the demo history that future ingestion can use.
 
@@ -157,9 +191,14 @@ archeon/
 |   |-- __init__.py
 |   |-- cli.py
 |   |-- ingest.py
+|   |-- memory.py
+|   |-- schema.py
+|   |-- lifecycle/
 |   `-- utils.py
 |-- demo/
 |   `-- atlas-api/
+|-- scripts/
+|   `-- demo_lifecycle.py
 |-- tests/
 |-- .gitignore
 |-- LICENSE
@@ -177,8 +216,8 @@ archeon/
 
 ## Not Implemented Yet
 
-- Cognee `remember()` ingestion.
-- Cognee recall question answering.
+- Cognee ingestion wired into `archeon ingest`.
+- Cognee recall wired into `archeon why`.
 - GitHub API integration.
 - Citation ranking.
 - AI coding session log ingestion.
