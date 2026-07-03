@@ -8,7 +8,16 @@ import typer
 
 from archeon import memory
 from archeon.ingest_pipeline import run_ingest
+from archeon.query_engine import query_sync
+from archeon.schema import ConfidenceTier
 from archeon.utils import format_path
+
+# Confidence badges for terminal output.
+_CONFIDENCE_BADGE = {
+    ConfidenceTier.CITED: "[cited]",
+    ConfidenceTier.INFERRED: "[inferred]",
+    ConfidenceTier.UNKNOWN: "[unknown]",
+}
 
 app = typer.Typer(
     name="archeon",
@@ -91,18 +100,33 @@ def ingest(
 
 @app.command()
 def why(
-    file: Path = typer.Argument(
+    target: str = typer.Argument(
         ...,
-        help="Path to the file to explain.",
-        exists=False,
-        file_okay=True,
-        dir_okay=False,
-        resolve_path=True,
+        help="A file path or a natural-language question about a decision.",
     ),
+    top_k: int = typer.Option(10, help="How many memory chunks to consider."),
 ) -> None:
-    """Placeholder for decision explanation."""
-    typer.echo(f"Placeholder: would explain why {file} exists or changed.")
-    typer.echo("Query engine integration is not implemented yet.")
+    """Explain why a file exists or a decision was made."""
+    question = _as_question(target)
+    result = query_sync(question, top_k=top_k)
+
+    typer.echo(f"{_CONFIDENCE_BADGE[result.confidence]} {result.question}")
+    typer.echo("")
+    typer.echo(result.answer)
+
+    if result.sources:
+        typer.echo("")
+        typer.echo("Sources:")
+        for source in result.sources:
+            locator = f" {source.locator}" if source.locator else ""
+            typer.echo(f"  - {source.source_type.value}{locator}")
+
+
+def _as_question(file_or_question: str) -> str:
+    """Turn a bare file path into a 'why does X exist?' question."""
+    if " " in file_or_question or "?" in file_or_question:
+        return file_or_question
+    return f"Why does {file_or_question} exist, and what decision shaped it?"
 
 
 @app.command()
