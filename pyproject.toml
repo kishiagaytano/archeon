@@ -22,6 +22,9 @@ dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
 ]
+lifecycle = [
+    "watchdog>=4.0.0",
+]
 
 [project.scripts]
 archeon = "archeon.cli:main"
@@ -31,3 +34,4 @@ include = ["archeon*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
