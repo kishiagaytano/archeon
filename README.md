@@ -20,21 +20,23 @@ git clone https://github.com/kishiagaytano/archeon.git
 cd archeon
 python -m venv .venv
 .\.venv\Scripts\activate
-pip install -e ".[cognee,dev]"
+pip install -e ".[cognee,lifecycle,dev]"
 ```
 
 Optional environment variables:
 
 | Variable | Purpose |
 |----------|---------|
-| `LLM_API_KEY` | Required for Cognee `cognify` / search during full ingest |
+| `COGNEE_BASE_URL` + `COGNEE_API_KEY` | Route memory operations to a Cognee Cloud tenant |
+| `LLM_API_KEY` | Required for local/direct-provider `cognify` / search when not using Cognee Cloud |
 | `GITHUB_TOKEN` | Higher GitHub API rate limits for PR extraction |
 | `ARCHEON_DATASET` | Cognee dataset name (default: `archeon`) |
 
-Verify Cognee is wired correctly:
+Verify the live Cognee surface:
 
 ```powershell
 python -m archeon.verify_cognee
+python scripts/demo_lifecycle.py
 ```
 
 ## Quick Start
@@ -68,7 +70,7 @@ archeon ingest .test-repos/tamsi_ai --incremental
 | `archeon ingest <repo> --incremental` | Only process new commits since last run |
 | `archeon ingest <repo> --github owner/repo` | Include GitHub PRs and linked issues |
 | `archeon why <file>` | Explain why code exists (query engine — Member B) |
-| `archeon status` | CLI + Cognee availability |
+| `archeon status` | CLI + Cognee availability + lifecycle counters |
 
 ## Data Sources
 
@@ -164,12 +166,76 @@ recall()
 Answer with commit/PR citations
 ```
 
+## How It Works
+
+Archeon has two halves: **ingestion** (write side) turns a repo's history into a
+decision graph, and the **query engine** (read side) answers questions against
+it with confidence-scored citations.
+
+### 1. From history to a decision graph
+
+Extractors emit `{source, content, metadata}` records; `ingest_pipeline.py`
+chunks them per source type and calls `memory.remember()`, which hands them to
+Cognee. Cognee's `cognify()` uses an LLM to extract a typed graph — `Decision`,
+`Context`, `Consequence`, `CodeFile`, `Evidence` nodes joined by
+`MOTIVATED_BY`, `RESULTED_IN`, `AFFECTS_FILE`, and `CITED_IN` edges (full spec
+in [`SCHEMA.md`](SCHEMA.md)). `remember()` also stamps each chunk with a
+`[source=... locator=...]` header so provenance survives into the store.
+
+### 2. From a question to a cited answer
+
+`archeon why "<question>"` runs `query_engine.query()`, which does a **two-pass
+retrieval** against Cognee and shapes the result:
+
+```text
+question
+   ├─ pass 1: GRAPH_COMPLETION  → synthesized natural-language answer
+   └─ pass 2: CHUNKS            → raw source chunks (carry [source=...] headers)
+          ↓
+   assemble → QueryResult{ question, answer, confidence, sources }
+```
+
+- The **answer** comes from the graph-completion pass (hybrid graph + vector).
+- The **citations** come from the chunks pass, parsed back out of the headers.
+- If the completion pass is empty or errors, the engine **falls back** to the
+  chunk text (vector-only) at lower confidence; if nothing comes back at all it
+  reports an `unknown` gap instead of crashing.
+
+### 3. Confidence hierarchy
+
+Every answer is tagged `cited > inferred > unknown`:
+
+| Tier | When | CLI badge |
+|------|------|-----------|
+| **cited** | Backed by recovered `Evidence` (commit / PR / ADR / issue) | `[cited]` |
+| **inferred** | Answer synthesized from the graph, no attributable source | `[inferred]` |
+| **unknown** | No memory found — a gap | `[unknown]` |
+
+Example output:
+
+```text
+[cited] Why did we replace Redis with PostgreSQL?
+
+Sessions had become product data, so PostgreSQL replaced Redis to provide
+transactions, durable rows, and queryable support history.
+
+Sources:
+  - adr ADR-003
+  - pull_request PR-4
+```
+
+Try the full demo query set (10+ questions) once the demo repo is ingested:
+
+```powershell
+python scripts/query_demo.py
+```
+
 ## Not Implemented Yet
 
-- `archeon why` query engine (Member B)
-- Lifecycle `forget()` / `improve()` hooks (Member C)
+- Lifecycle `forget()` / `improve()` hooks (Member C — in progress)
 - AI coding session log ingestion
 
 ## Status
 
-Ingestion pipeline is wired end-to-end: `archeon ingest` → extractors → JSONL → Cognee `remember()`.
+- Ingestion pipeline wired end-to-end: `archeon ingest` → extractors → JSONL → Cognee `remember()`.
+- Query engine live: `archeon why` → two-pass recall → `{answer, confidence, sources}` with the `cited > inferred > unknown` hierarchy.

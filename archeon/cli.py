@@ -1152,6 +1152,14 @@ def _lifecycle_panel(lifecycle: dict) -> Group:
         Text(f"Idle (0): {idle_names}", style=PASTEL["gray"]),
     )
 
+    lifecycle = lifecycle_status()
+    typer.echo("Lifecycle status:")
+    typer.echo(f"  forgotten nodes: {lifecycle['forgotten_count']}")
+    typer.echo(f"  improved nodes:  {lifecycle['improved_count']}")
+    typer.echo(f"  feedback events: {lifecycle['feedback_count']}")
+    typer.echo(f"  orphan nodes:    {lifecycle['orphan_count']}")
+    typer.echo(f"  adr drafts:      {len(lifecycle['adr_drafts'])}")
+
 
 def main() -> None:
     """Entrypoint used by the console script."""

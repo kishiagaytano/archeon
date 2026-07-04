@@ -134,6 +134,19 @@ Docs (`ARCHITECTURE.md`), README polish, Cognee PR bounties, final video/submiss
 | C → B: `forget()` prunes → `recall()` reflects | ✅ share `DecisionGraph`; live loop needs a key |
 | C → D: lifecycle status → CLI commands | ✅ `gaps` / `recover` / `forget` / `feedback` wired (working tree) |
 
+## Known limitation — citations (`cited` tier)
+
+The query engine's citation pass reads the `[source=...]` headers `remember()`
+embeds, but two things currently keep answers at `inferred` rather than `cited`
+in live runs:
+1. **Cognee session memory is on by default** (1.2.2), so past Q&A ("Got it.")
+   gets written back into the store and pollutes the `CHUNKS` retrieval.
+2. **No clean full-repo ingest has completed** — the demo cognify hits Groq's
+   free-tier rate limit at ~35 chunks.
+Fix path: disable session memory, throttle/batch the ingest, re-ingest clean.
+The two-pass engine and confidence logic are correct and unit-tested; this is a
+data/quota issue, not a code bug.
+
 ## Open items / next actions
 
 1. ~~**B:** query engine + `why` wiring~~ — ✅ done (engine merged; `why` wired on working tree).

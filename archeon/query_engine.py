@@ -12,9 +12,22 @@ Output contract (the interface Member D's CLI renders):
         sources:    list[Source],     # citations, if any
     }
 
+Retrieval (two-pass)
+    1. ANSWER pass -- ``GRAPH_COMPLETION`` gives a synthesized natural-language
+       answer over the hybrid graph+vector store, but it does *not* carry our
+       source headers.
+    2. CITATION pass -- ``CHUNKS`` returns the raw stored chunks, which *do*
+       carry the ``[source=...]`` headers, so we can attach real citations.
+    The answer comes from pass 1, the sources from pass 2.
+
+Graceful fallback
+    If the completion pass fails or is empty, we fall back to the CHUNKS
+    (vector-only) text as the answer with lower confidence, and only report an
+    ``unknown`` gap when nothing at all comes back.
+
 Confidence policy
-    * cited     -> we recovered concrete Source citations from the answer.
-    * inferred  -> Cognee returned an answer but no attributable source.
+    * cited     -> we recovered concrete Source citations (from the CHUNKS pass).
+    * inferred  -> we have an answer but no attributable source.
     * unknown   -> nothing came back, or Cognee is unavailable / not keyed.
 
 The engine relies on the header (``[source=commit] [locator=...] ...``) that
@@ -31,6 +44,11 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from . import memory
 from .schema import ConfidenceTier, SourceType
+
+# Cognee search types (see cognee.SearchType). The answer pass synthesizes over
+# the graph; the citation pass returns the raw chunks that carry our headers.
+ANSWER_SEARCH_TYPE = "GRAPH_COMPLETION"
+CITATION_SEARCH_TYPE = "CHUNKS"
 
 # Matches the metadata header memory.remember() prepends, e.g.
 # "[source=commit] [sha=9f64b1c] [author=Owen Brooks]"
@@ -115,31 +133,54 @@ def _result_to_text(result: Any) -> str:
     return str(result)
 
 
-def _shape(question: str, raw_results: list[Any]) -> QueryResult:
-    """Turn raw Cognee results into a QueryResult with a confidence tier.
-
-    Split out from :func:`query` so it can be unit-tested without Cognee.
-    """
+def _clean_texts(raw_results: list[Any]) -> list[str]:
+    """Coerce raw results to non-empty text."""
     texts = [_result_to_text(r) for r in raw_results if r is not None]
-    texts = [t for t in texts if t.strip()]
+    return [t for t in texts if t and t.strip()]
 
-    if not texts:
+
+def _dedupe_sources(sources: list[Source]) -> list[Source]:
+    """Drop duplicate citations keyed on (source_type, locator)."""
+    seen: set[tuple[str, Optional[str]]] = set()
+    unique: list[Source] = []
+    for source in sources:
+        key = (source.source_type.value, source.locator)
+        if key not in seen:
+            seen.add(key)
+            unique.append(source)
+    return unique
+
+
+def _assemble(
+    question: str,
+    answer_results: list[Any],
+    source_results: list[Any],
+) -> QueryResult:
+    """Combine an answer pass and a citation pass into a QueryResult.
+
+    ``answer_results`` supplies the answer body; ``source_results`` supplies
+    citations (parsed from ``[source=...]`` headers). Confidence is ``cited``
+    when any citation is recovered, ``inferred`` when we only have an answer,
+    and ``unknown`` when nothing usable came back. Split out from :func:`query`
+    so it is unit-testable without Cognee.
+    """
+    answer_texts = _clean_texts(answer_results)
+    source_texts = _clean_texts(source_results)
+
+    sources = _dedupe_sources(
+        [s for s in (_extract_source(t) for t in source_texts) if s is not None]
+    )
+
+    # Prefer the synthesized answer; fall back to the raw chunks (vector-only).
+    answer_pool = answer_texts or source_texts
+    if not answer_pool:
         return QueryResult(
             question=question,
             answer="No memory found for this question yet.",
             confidence=ConfidenceTier.UNKNOWN,
         )
 
-    sources: list[Source] = []
-    for text in texts:
-        source = _extract_source(text)
-        if source is not None:
-            sources.append(source)
-
-    # The most complete recalled chunk is the best answer body.
-    answer = max(texts, key=len)
-    answer = _TAG_RE.sub("", answer).strip()
-
+    answer = _TAG_RE.sub("", max(answer_pool, key=len)).strip()
     confidence = ConfidenceTier.CITED if sources else ConfidenceTier.INFERRED
     return QueryResult(
         question=question,
@@ -149,16 +190,36 @@ def _shape(question: str, raw_results: list[Any]) -> QueryResult:
     )
 
 
+def _shape(question: str, raw_results: list[Any]) -> QueryResult:
+    """Single-pass shaping (one result list used for both answer and sources).
+
+    Kept for callers/tests that have a single result list; :func:`query` uses
+    the richer two-pass :func:`_assemble`.
+    """
+    return _assemble(question, raw_results, raw_results)
+
+
+async def _recall(question: str, search_type: str, top_k: int) -> list[Any]:
+    """Recall for one search type, returning ``[]`` on any failure."""
+    try:
+        return list(await memory.recall(question, search_type=search_type, top_k=top_k))
+    except Exception:  # noqa: BLE001 - a failed pass degrades, it doesn't crash
+        return []
+
+
 async def query(
     question: str,
     *,
-    search_type: Optional[str] = None,
     top_k: int = 10,
+    answer_search_type: str = ANSWER_SEARCH_TYPE,
+    citation_search_type: str = CITATION_SEARCH_TYPE,
 ) -> QueryResult:
-    """Answer ``question`` from Archeon's memory.
+    """Answer ``question`` from Archeon's memory with a two-pass retrieval.
 
-    Returns a :class:`QueryResult` even on failure: if Cognee is unavailable or
-    unkeyed, the result is an ``unknown``-confidence gap rather than an
+    Pass 1 (``answer_search_type``) synthesizes the answer; pass 2
+    (``citation_search_type``) recovers source citations. Returns a
+    :class:`QueryResult` even on failure -- if Cognee is unavailable, unkeyed,
+    or every pass fails, the result is an ``unknown`` gap rather than an
     exception, so the CLI can always render something.
     """
     if not memory.cognee_available():
@@ -168,28 +229,36 @@ async def query(
             confidence=ConfidenceTier.UNKNOWN,
         )
 
-    try:
-        raw_results = await memory.recall(question, search_type=search_type, top_k=top_k)
-    except Exception as exc:  # noqa: BLE001 - degrade to a gap, don't crash the CLI
-        return QueryResult(
-            question=question,
-            answer=f"Could not reach memory: {exc}",
-            confidence=ConfidenceTier.UNKNOWN,
-        )
-
-    return _shape(question, list(raw_results))
+    answer_results = await _recall(question, answer_search_type, top_k)
+    citation_results = await _recall(question, citation_search_type, top_k)
+    return _assemble(question, answer_results, citation_results)
 
 
 def query_sync(
     question: str,
     *,
-    search_type: Optional[str] = None,
     top_k: int = 10,
+    answer_search_type: str = ANSWER_SEARCH_TYPE,
+    citation_search_type: str = CITATION_SEARCH_TYPE,
 ) -> QueryResult:
     """Synchronous wrapper around :func:`query` for the CLI."""
     import asyncio
 
-    return asyncio.run(query(question, search_type=search_type, top_k=top_k))
+    return asyncio.run(
+        query(
+            question,
+            top_k=top_k,
+            answer_search_type=answer_search_type,
+            citation_search_type=citation_search_type,
+        )
+    )
 
 
-__all__ = ["Source", "QueryResult", "query", "query_sync"]
+__all__ = [
+    "Source",
+    "QueryResult",
+    "query",
+    "query_sync",
+    "ANSWER_SEARCH_TYPE",
+    "CITATION_SEARCH_TYPE",
+]

@@ -8,11 +8,14 @@ from unittest.mock import patch
 
 import pytest
 
+from archeon import memory
 from archeon.ingest_pipeline import (
     IngestState,
+    LifecycleIndex,
     chunk_record,
     enrich_record,
     extract_all,
+    load_lifecycle_index,
     load_state,
     prepare_records,
     run_ingest,
@@ -101,10 +104,20 @@ def test_run_ingest_extract_only_writes_jsonl(tmp_path: Path) -> None:
 def test_run_ingest_remembers_with_mocked_cognee(tmp_path: Path) -> None:
     demo = project_root() / "demo" / "atlas-api"
     output_dir = tmp_path / "extracts" / "atlas-api"
+    receipts = [
+        memory.RememberReceipt(
+            item_index=0,
+            text="stored chunk",
+            memory_id="node-123",
+            source="commit",
+            locator="src/atlas_api/storage.py",
+            file_paths=("src/atlas_api/storage.py",),
+        )
+    ]
 
     with patch("archeon.memory.cognee_available", return_value=True), patch(
-        "archeon.memory.remember_sync",
-        return_value=3,
+        "archeon.memory.remember_with_receipts_sync",
+        return_value=receipts,
     ) as remember_mock:
         result = run_ingest(
             demo,
@@ -114,8 +127,11 @@ def test_run_ingest_remembers_with_mocked_cognee(tmp_path: Path) -> None:
         )
 
     remember_mock.assert_called_once()
-    assert result.chunks_remembered == 3
+    assert result.chunks_remembered == 1
     assert result.cognee_used is True
+    index = load_lifecycle_index(output_dir)
+    assert index.by_file["src/atlas_api/storage.py"] == ["node-123"]
+    assert result.lifecycle_index_path == output_dir / "lifecycle_index.json"
 
 
 def test_prepare_records_preserves_source_tags() -> None:
@@ -129,3 +145,22 @@ def test_prepare_records_preserves_source_tags() -> None:
     prepared = prepare_records(records)
     assert prepared[0].metadata["source_type"] == "readme"
     assert prepared[0].metadata["confidence_tier"] == ConfidenceTier.CITED.value
+
+
+def test_lifecycle_index_round_trip(tmp_path: Path) -> None:
+    output_dir = tmp_path / "extracts" / "atlas-api"
+    output_dir.mkdir(parents=True)
+    index = LifecycleIndex(
+        repo_key="demo",
+        by_file={"src/atlas_api/storage.py": ["node-1"]},
+        by_locator={"ADR-003": ["node-2"]},
+    )
+
+    from archeon.ingest_pipeline import save_lifecycle_index
+
+    path = save_lifecycle_index(output_dir, index)
+    loaded = load_lifecycle_index(output_dir)
+
+    assert path.exists()
+    assert loaded.by_file["src/atlas_api/storage.py"] == ["node-1"]
+    assert loaded.by_locator["ADR-003"] == ["node-2"]

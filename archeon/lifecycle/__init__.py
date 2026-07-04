@@ -6,6 +6,7 @@ from .adr import generate_adr
 from .feedback import InvalidVoteError, normalize_vote
 from .graph_loader import build_graph_from_records, load_decision_graph
 from .lifecycle import (
+    LifecycleOperationError,
     configure_default_provider,
     handle_feedback,
     handle_file_deletion,
@@ -25,13 +26,12 @@ from .provider import CogneeProvider, MemoryProvider, MockProvider
 from .status import lifecycle_status
 from .watcher import LifecycleWatcher
 
-from .logger import get_logger
-
 __all__ = [
     "CogneeProvider",
     "DEFAULT_RULES",
     "DeprecatedDecisionRule",
     "InvalidVoteError",
+    "LifecycleOperationError",
     "LifecycleWatcher",
     "MemoryProvider",
     "MissingSourceFileRule",
