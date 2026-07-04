@@ -133,6 +133,29 @@ def test_query_degrades_when_a_pass_errors(monkeypatch) -> None:
     assert result.sources[0].locator == "ADR-003"
 
 
+def test_query_sync_accepts_search_type_alias(monkeypatch) -> None:
+    # Regression: the CLI's --search-type passes search_type= to query_sync.
+    # The two-pass refactor renamed the param; this guards back-compat so
+    # `archeon why --search-type X` doesn't raise TypeError.
+    monkeypatch.setattr(query_engine.memory, "cognee_available", lambda: True)
+    seen_types: list = []
+
+    async def fake_recall(question, *, search_type=None, top_k=10):
+        seen_types.append(search_type)
+        if search_type == "CHUNKS":
+            return ["[source=adr] [locator=ADR-1] durable sessions"]
+        return [{"search_result": ["Postgres for durability."]}]
+
+    monkeypatch.setattr(query_engine.memory, "recall", fake_recall)
+
+    result = query_sync("Why Postgres?", search_type="RAG_COMPLETION")
+
+    assert result.confidence is ConfidenceTier.CITED
+    # search_type overrides the ANSWER pass (not the default GRAPH_COMPLETION).
+    assert "RAG_COMPLETION" in seen_types
+    assert "GRAPH_COMPLETION" not in seen_types
+
+
 def test_query_unknown_when_cognee_unavailable(monkeypatch) -> None:
     monkeypatch.setattr(query_engine.memory, "cognee_available", lambda: False)
     result = query_sync("Why?")

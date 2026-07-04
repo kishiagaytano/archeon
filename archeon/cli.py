@@ -25,6 +25,17 @@ from typing import Any
 os.environ.setdefault("LOG_LEVEL", "ERROR")
 os.environ.setdefault("LITELLM_LOG", "ERROR")
 
+# Windows consoles default to a legacy code page (e.g. cp1252) that cannot encode
+# the Unicode glyphs the Rich UI uses (arrows like "→", chips, box glyphs). Rich's
+# legacy-Windows renderer then raises UnicodeEncodeError mid-render (crashing
+# `why`'s decision chain). Force UTF-8 output before any rendering so every glyph
+# is safe; errors="replace" is a last-resort guard against exotic characters.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+    except (AttributeError, ValueError):  # pragma: no cover - non-reconfigurable stream
+        pass
+
 import typer
 from rich.columns import Columns
 from rich.console import Console, Group

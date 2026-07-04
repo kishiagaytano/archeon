@@ -211,17 +211,23 @@ async def query(
     question: str,
     *,
     top_k: int = 10,
+    search_type: Optional[str] = None,
     answer_search_type: str = ANSWER_SEARCH_TYPE,
     citation_search_type: str = CITATION_SEARCH_TYPE,
 ) -> QueryResult:
     """Answer ``question`` from Archeon's memory with a two-pass retrieval.
 
     Pass 1 (``answer_search_type``) synthesizes the answer; pass 2
-    (``citation_search_type``) recovers source citations. Returns a
-    :class:`QueryResult` even on failure -- if Cognee is unavailable, unkeyed,
-    or every pass fails, the result is an ``unknown`` gap rather than an
-    exception, so the CLI can always render something.
+    (``citation_search_type``) recovers source citations. ``search_type`` is a
+    backward-compatible alias that overrides the answer pass (used by the CLI's
+    ``--search-type``). Returns a :class:`QueryResult` even on failure -- if
+    Cognee is unavailable, unkeyed, or every pass fails, the result is an
+    ``unknown`` gap rather than an exception, so the CLI can always render
+    something.
     """
+    if search_type:
+        answer_search_type = search_type
+
     if not memory.cognee_available():
         return QueryResult(
             question=question,
@@ -238,16 +244,22 @@ def query_sync(
     question: str,
     *,
     top_k: int = 10,
+    search_type: Optional[str] = None,
     answer_search_type: str = ANSWER_SEARCH_TYPE,
     citation_search_type: str = CITATION_SEARCH_TYPE,
 ) -> QueryResult:
-    """Synchronous wrapper around :func:`query` for the CLI."""
+    """Synchronous wrapper around :func:`query` for the CLI.
+
+    ``search_type`` is a back-compat alias for ``answer_search_type`` (the CLI's
+    ``--search-type`` option).
+    """
     import asyncio
 
     return asyncio.run(
         query(
             question,
             top_k=top_k,
+            search_type=search_type,
             answer_search_type=answer_search_type,
             citation_search_type=citation_search_type,
         )
