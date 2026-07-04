@@ -8,6 +8,7 @@ import typer
 
 from archeon import memory
 from archeon.ingest_pipeline import run_ingest
+from archeon.lifecycle import lifecycle_status
 from archeon.query_engine import query_sync
 from archeon.schema import ConfidenceTier
 from archeon.utils import format_path

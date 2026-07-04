@@ -119,7 +119,7 @@ def test_remember_with_receipts_connects_to_cloud_when_configured(
 
     fake_cognee = FakeCognee()
     monkeypatch.setattr(memory, "cognee", fake_cognee, raising=False)
-    monkeypatch.setattr(memory, "_CONNECTED_CLOUD_URL", None, raising=False)
+    monkeypatch.setattr(memory, "_CONNECTED_CLOUD_CONTEXT", None, raising=False)
     monkeypatch.setenv("COGNEE_BASE_URL", "https://tenant.aws.cognee.ai")
     monkeypatch.setenv("COGNEE_API_KEY", "cloud-key")
 
