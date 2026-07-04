@@ -58,9 +58,17 @@ Combined test suite currently: **49 passed, 1 skipped**.
 | C | Full lifecycle demo loop (ingest→query→feedback→re-query→delete→re-query) | 🟡 | `scripts/demo_lifecycle.py` exists; end-to-end pass pending a key |
 | D | Demo script + video prep | ⏳ | |
 
-### DAY 3 — Ship (July 5) — not started
+### DAY 3 — Ship (July 5) — in progress
 
-Docs (`ARCHITECTURE.md`), README polish, Cognee PR bounties, final video/submission.
+| Role | Deliverable | Status | Notes |
+|------|-------------|--------|-------|
+| A | Final ingest fixes, clean-install verify, merge open PRs | ⏳ | |
+| B | `ARCHITECTURE.md` + document every Cognee API + final query check | ✅ | `ARCHITECTURE.md` (incl. Cognee API reference §8), `KNOWN_ISSUES.md`; query-engine suite 15/15. Live round trip blocked by Groq rate limits (documented). |
+| C | Cognee PR bounty submissions, `KNOWN_ISSUES.md`, final lifecycle pass | 🟡 | `KNOWN_ISSUES.md` drafted (B); bounty PRs + final lifecycle pass pending (C, needs human) |
+| D | Final video, README badges/screenshots/GIF, submission | ⏳ | needs human (recording + submission form) |
+
+Cross-cutting fix landed: `archeon status` crash (missing `lifecycle_status`
+import) fixed via PR #6.
 
 ---
 
