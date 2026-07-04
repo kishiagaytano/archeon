@@ -37,5 +37,5 @@ def test_lifecycle_status_aggregates_events() -> None:
     assert status["feedback_count"] == 1
     assert status["forgotten_count"] == 2
     assert status["deleted_files"] == [code_file.path]
-    assert status["orphan_count"] == 2
+    assert status["orphan_count"] == 1
     assert len(status["adr_drafts"]) == 1

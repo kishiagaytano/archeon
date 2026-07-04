@@ -52,6 +52,7 @@ class IngestResult:
     skipped_incremental: int
     source_counts: dict[str, int] = field(default_factory=dict)
     cognee_used: bool = False
+    lifecycle_index_path: Path | None = None
 
 
 @dataclass
@@ -82,6 +83,36 @@ class IngestState:
         )
 
 
+@dataclass(frozen=True)
+class LifecycleIndex:
+    """Persisted file/locator -> live memory id mapping for lifecycle flows."""
+
+    repo_key: str
+    by_file: dict[str, list[str]] = field(default_factory=dict)
+    by_locator: dict[str, list[str]] = field(default_factory=dict)
+
+    def to_dict(self) -> dict:
+        return {
+            "repo_key": self.repo_key,
+            "by_file": self.by_file,
+            "by_locator": self.by_locator,
+        }
+
+    @classmethod
+    def from_dict(cls, payload: dict) -> "LifecycleIndex":
+        return cls(
+            repo_key=payload.get("repo_key", ""),
+            by_file={
+                str(path): [str(node_id) for node_id in node_ids]
+                for path, node_ids in dict(payload.get("by_file", {})).items()
+            },
+            by_locator={
+                str(locator): [str(node_id) for node_id in node_ids]
+                for locator, node_ids in dict(payload.get("by_locator", {})).items()
+            },
+        )
+
+
 def repo_key(repo: Path) -> str:
     return str(repo.resolve())
 
@@ -104,6 +135,25 @@ def save_state(output_dir: Path, state: IngestState) -> Path:
     path = state_path(output_dir, state.repo_key if state.repo_key else ".")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(state.to_dict(), indent=2), encoding="utf-8")
+    return path
+
+
+def lifecycle_index_path(output_dir: Path) -> Path:
+    return output_dir / "lifecycle_index.json"
+
+
+def load_lifecycle_index(output_dir: Path) -> LifecycleIndex:
+    path = lifecycle_index_path(output_dir)
+    if not path.is_file():
+        return LifecycleIndex(repo_key="")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    return LifecycleIndex.from_dict(payload)
+
+
+def save_lifecycle_index(output_dir: Path, index: LifecycleIndex) -> Path:
+    path = lifecycle_index_path(output_dir)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(index.to_dict(), indent=2), encoding="utf-8")
     return path
 
 
@@ -317,6 +367,29 @@ def write_extracts(
     return tuple(paths)
 
 
+def build_lifecycle_index(repo: Path, receipts: Iterable["memory.RememberReceipt"]) -> LifecycleIndex:
+    by_file: dict[str, list[str]] = {}
+    by_locator: dict[str, list[str]] = {}
+
+    for receipt in receipts:
+        if not receipt.memory_id:
+            continue
+        for file_path in receipt.file_paths:
+            by_file.setdefault(file_path, [])
+            if receipt.memory_id not in by_file[file_path]:
+                by_file[file_path].append(receipt.memory_id)
+        if receipt.locator:
+            by_locator.setdefault(receipt.locator, [])
+            if receipt.memory_id not in by_locator[receipt.locator]:
+                by_locator[receipt.locator].append(receipt.memory_id)
+
+    return LifecycleIndex(
+        repo_key=repo_key(repo),
+        by_file=by_file,
+        by_locator=by_locator,
+    )
+
+
 def _update_state_from_records(state: IngestState, records: list[SourceRecord]) -> IngestState:
     commit_shas = [
         record.metadata["sha"]
@@ -367,15 +440,19 @@ def run_ingest(
 
     remembered = 0
     cognee_used = False
+    lifecycle_receipts: list["memory.RememberReceipt"] = []
     if remember and not extract_only and prepared:
         from archeon import memory
 
         if memory.cognee_available():
-            remembered = memory.remember_sync(prepared, cognify=cognify)
+            lifecycle_receipts = memory.remember_with_receipts_sync(prepared, cognify=cognify)
+            remembered = len(lifecycle_receipts)
             cognee_used = True
         else:
             remember = False
 
+    lifecycle_index = build_lifecycle_index(repo, lifecycle_receipts)
+    index_path = save_lifecycle_index(output_dir, lifecycle_index)
     state = _update_state_from_records(state, raw_records)
     save_state(output_dir.parent, state)
 
@@ -388,4 +465,5 @@ def run_ingest(
         skipped_incremental=skipped,
         source_counts=_count_sources(raw_records),
         cognee_used=cognee_used,
+        lifecycle_index_path=index_path,
     )

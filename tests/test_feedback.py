@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from archeon.lifecycle import handle_feedback
+from archeon.lifecycle import LifecycleOperationError, handle_feedback
 from archeon.lifecycle.feedback import InvalidVoteError, normalize_vote
 from archeon.lifecycle.provider import MockProvider
 
@@ -31,3 +31,22 @@ def test_handle_feedback_improves_node() -> None:
     assert provider.improved == [("decision-001", "up")]
     assert "decision-001" in state.improved_nodes
     assert state.feedback_events == [{"node_id": "decision-001", "vote": "up"}]
+
+
+def test_handle_feedback_raises_when_backend_fails() -> None:
+    class FailingProvider:
+        def forget(self, node_id: str) -> bool:
+            return True
+
+        def improve(self, node_id: str, signal: str) -> bool:
+            return False
+
+        def find_nodes_for_file(self, path: str) -> list[str]:
+            return []
+
+    state = fresh_state()
+
+    with pytest.raises(LifecycleOperationError):
+        handle_feedback("decision-001", "up", provider=FailingProvider(), state=state)
+
+    assert state.feedback_events == []

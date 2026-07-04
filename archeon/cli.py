@@ -8,6 +8,7 @@ import typer
 
 from archeon import memory
 from archeon.ingest_pipeline import run_ingest
+from archeon.lifecycle import lifecycle_status
 from archeon.utils import format_path
 
 app = typer.Typer(
@@ -124,6 +125,14 @@ def status() -> None:
         extract_dirs = [path for path in state_root.glob("extracts/*") if path.is_dir()]
         if extract_dirs:
             typer.echo(f"Extract directories: {len(extract_dirs)}")
+
+    lifecycle = lifecycle_status()
+    typer.echo("Lifecycle status:")
+    typer.echo(f"  forgotten nodes: {lifecycle['forgotten_count']}")
+    typer.echo(f"  improved nodes:  {lifecycle['improved_count']}")
+    typer.echo(f"  feedback events: {lifecycle['feedback_count']}")
+    typer.echo(f"  orphan nodes:    {lifecycle['orphan_count']}")
+    typer.echo(f"  adr drafts:      {len(lifecycle['adr_drafts'])}")
 
 
 def main() -> None:
