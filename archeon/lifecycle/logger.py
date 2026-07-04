@@ -11,14 +11,15 @@ _CONFIGURED = False
 def get_logger(name: str = _DEFAULT_NAME) -> logging.Logger:
     """Return a configured logger for lifecycle events."""
     global _CONFIGURED
-    logger = logging.getLogger(name)
+    base_logger = logging.getLogger(_DEFAULT_NAME)
     if not _CONFIGURED:
-        if not logger.handlers:
+        if not base_logger.handlers:
             handler = logging.StreamHandler()
             handler.setFormatter(
                 logging.Formatter("%(levelname)s %(name)s: %(message)s")
             )
-            logger.addHandler(handler)
-        logger.setLevel(logging.INFO)
+            base_logger.addHandler(handler)
+        base_logger.setLevel(logging.INFO)
+        base_logger.propagate = False
         _CONFIGURED = True
-    return logger
+    return logging.getLogger(name)

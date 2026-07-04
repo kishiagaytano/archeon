@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Mocked end-to-end lifecycle demo for the July 4 presentation.
+"""Capability-checked lifecycle demo for the July 4 presentation.
 
 Run with::
 
     python scripts/demo_lifecycle.py
 
-Tomorrow, swap ``mock_ingest()`` for Member A's ``ingest_pipeline`` — the rest
-of the loop stays the same.
+The demo prefers the real ingest/provider path and reports downgrade behavior
+when the current Cognee runtime does not expose node-level lifecycle APIs.
 """
 
 from __future__ import annotations
@@ -18,6 +18,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from archeon import memory  # noqa: E402
+from archeon.ingest_pipeline import load_lifecycle_index, run_ingest  # noqa: E402
 from archeon.lifecycle import (  # noqa: E402
     detect_orphan_nodes,
     generate_adr,
@@ -27,84 +29,119 @@ from archeon.lifecycle import (  # noqa: E402
     lifecycle_status,
     reset_lifecycle,
 )
-from archeon.lifecycle.provider import MockProvider  # noqa: E402
-from archeon.schema import SourceRecord, SourceType  # noqa: E402
-from archeon.lifecycle.demo_data import atlas_graph, orphan_graph  # noqa: E402
+from archeon.lifecycle.provider import CogneeProvider  # noqa: E402
+from archeon.lifecycle.demo_data import orphan_graph  # noqa: E402
 
 logger = get_logger("archeon.demo")
+QUESTION = "Why did the team replace Redis with PostgreSQL?"
+TARGET_FILE = "src/atlas_api/storage.py"
+TARGET_LOCATOR = "ADR-003"
 
 
-def mock_ingest() -> int:
-    """Remember sample atlas-api decision snippets (or simulate without Cognee)."""
-    from archeon import memory
-
-    records = [
-        SourceRecord(
-            source=SourceType.ADR,
-            content=(
-                "ADR-003: Replace Redis With PostgreSQL. Redis caused session "
-                "persistence issues during restarts and memory pressure."
-            ),
-            metadata={"locator": "ADR-003", "date": "2026-06-07"},
-        ),
-        SourceRecord(
-            source=SourceType.COMMIT,
-            content=(
-                "replace redis session store with postgres for durable rows "
-                "and queryable support history."
-            ),
-            metadata={
-                "sha": "9f64b1c",
-                "locator": "src/atlas_api/storage.py",
-                "pr": "PR-4",
-            },
-        ),
-    ]
-
-    if memory.cognee_available():
-        logger.info("mock_ingest: calling remember() with %d records", len(records))
-        return memory.remember_sync(records)
-    logger.info("mock_ingest: Cognee not installed; skipping remember()")
-    return len(records)
+def _demo_output_dir() -> Path:
+    return ROOT / ".archeon" / "extracts" / "atlas-api-demo"
 
 
-def mock_query(question: str) -> list:
-    """Recall or return a placeholder when Cognee is unavailable."""
-    from archeon import memory
+def _log_capabilities(caps: memory.CogneeCapabilities) -> None:
+    logger.info("Cognee available: %s", caps.available)
+    logger.info("Remember API available: %s", caps.add_api)
+    logger.info("Recall API available: %s", caps.search_api)
+    logger.info("Forget API: %s", caps.forget_api or "unsupported")
+    logger.info("Improve API: %s", caps.improve_api or "unsupported")
 
-    if memory.cognee_available():
-        logger.info("mock_query: %r", question)
+
+def _first_live_id(index, file_path: str, locator: str | None = None) -> str | None:
+    live_ids = _live_ids_for_file(index, file_path)
+    if live_ids:
+        return live_ids[0]
+    if locator and locator in index.by_locator and index.by_locator[locator]:
+        return index.by_locator[locator][0]
+    return None
+
+
+def _live_ids_for_file(index, file_path: str) -> list[str]:
+    for indexed_path, node_ids in index.by_file.items():
+        if indexed_path == file_path or indexed_path.endswith(file_path) or file_path.endswith(indexed_path):
+            return node_ids
+    return []
+
+
+def _query(question: str) -> list:
+    caps = memory.capabilities()
+    if not caps.search_api:
+        logger.info("Query unavailable in this runtime; skipping recall for %r", question)
+        return []
+
+    try:
+        logger.info("Querying: %r", question)
         return memory.recall_sync(question)
-    logger.info("mock_query (mocked): %r", question)
-    return [
-        "PostgreSQL replaced Redis because sessions needed durable, queryable rows."
-    ]
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Recall failed for %r: %s", question, exc)
+        return []
 
 
 def main() -> int:
     reset_lifecycle()
-    graph = atlas_graph()
-    code_file = graph.code_files[0]
-    decision = graph.decisions[0]
+    caps = memory.capabilities()
+    logger.info("=== Archeon Lifecycle Demo ===")
+    _log_capabilities(caps)
 
-    provider = MockProvider(
-        file_index={
-            code_file.path: [code_file.id, decision.id],
-        }
+    demo_repo = ROOT / "demo" / "atlas-api"
+    output_dir = _demo_output_dir()
+
+    try:
+        result = run_ingest(
+            demo_repo,
+            output_dir=output_dir,
+            extract_only=not caps.add_api,
+            cognify=caps.cognify_api,
+            remember=caps.add_api,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Live ingest failed, falling back to extract-only mode: %s", exc)
+        result = run_ingest(
+            demo_repo,
+            output_dir=output_dir,
+            extract_only=True,
+            remember=False,
+        )
+
+    logger.info(
+        "Ingested %s record(s), prepared %s chunk(s), remembered %s chunk(s)",
+        result.records_extracted,
+        result.chunks_prepared,
+        result.chunks_remembered,
     )
 
-    logger.info("=== Archeon Lifecycle Demo ===")
+    index = load_lifecycle_index(output_dir)
+    provider = CogneeProvider(file_index=index.by_file)
+    live_id = _first_live_id(index, TARGET_FILE, TARGET_LOCATOR)
+    if live_id:
+        logger.info("Resolved live lifecycle handle: %s", live_id)
+    else:
+        logger.info("No stable lifecycle handle was captured during ingest.")
 
-    added = mock_ingest()
-    logger.info("Ingested %s record(s)", added)
+    file_live_ids = _live_ids_for_file(index, TARGET_FILE)
 
-    before = mock_query("Why did the team replace Redis with PostgreSQL?")
+    before = _query(QUESTION)
     logger.info("Query before lifecycle: %d result(s)", len(before))
 
-    handle_feedback(decision.id, "up", provider=provider)
-    handle_file_deletion(code_file.path, provider=provider, graph=graph)
+    if caps.supports_improve and live_id:
+        try:
+            handle_feedback(live_id, "up", provider=provider)
+            logger.info("Feedback applied to %s", live_id)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Feedback step failed: %s", exc)
+    else:
+        logger.info("Skipping feedback: no live improve target is available.")
 
-    after = mock_query("Why did the team replace Redis with PostgreSQL?")
+    if caps.supports_forget and file_live_ids:
+        forgotten = handle_file_deletion(TARGET_FILE, provider=provider)
+        logger.info("Forgot %d node(s) for %s", len(forgotten), TARGET_FILE)
+    else:
+        logger.info("Skipping forget: no live file handles are available.")
+
+    after = _query(QUESTION)
     logger.info("Query after forget: %d result(s)", len(after))
 
     orphans = detect_orphan_nodes(orphan_graph())

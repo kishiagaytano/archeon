@@ -20,21 +20,23 @@ git clone https://github.com/kishiagaytano/archeon.git
 cd archeon
 python -m venv .venv
 .\.venv\Scripts\activate
-pip install -e ".[cognee,dev]"
+pip install -e ".[cognee,lifecycle,dev]"
 ```
 
 Optional environment variables:
 
 | Variable | Purpose |
 |----------|---------|
-| `LLM_API_KEY` | Required for Cognee `cognify` / search during full ingest |
+| `COGNEE_BASE_URL` + `COGNEE_API_KEY` | Route memory operations to a Cognee Cloud tenant |
+| `LLM_API_KEY` | Required for local/direct-provider `cognify` / search when not using Cognee Cloud |
 | `GITHUB_TOKEN` | Higher GitHub API rate limits for PR extraction |
 | `ARCHEON_DATASET` | Cognee dataset name (default: `archeon`) |
 
-Verify Cognee is wired correctly:
+Verify the live Cognee surface:
 
 ```powershell
 python -m archeon.verify_cognee
+python scripts/demo_lifecycle.py
 ```
 
 ## Quick Start
@@ -68,7 +70,7 @@ archeon ingest .test-repos/tamsi_ai --incremental
 | `archeon ingest <repo> --incremental` | Only process new commits since last run |
 | `archeon ingest <repo> --github owner/repo` | Include GitHub PRs and linked issues |
 | `archeon why <file>` | Explain why code exists (query engine — Member B) |
-| `archeon status` | CLI + Cognee availability |
+| `archeon status` | CLI + Cognee availability + lifecycle counters |
 
 ## Data Sources
 
@@ -164,12 +166,35 @@ recall()
 Answer with commit/PR citations
 ```
 
+## Lifecycle
+
+Member C's lifecycle path is capability-checked rather than hard-coded to one
+Cognee version.
+
+- `handle_feedback()` records lifecycle state only after a successful live
+  `improve` / `memify` call.
+- `handle_file_deletion()` resolves remembered handles from the ingest-time
+  lifecycle index first, then falls back to search-based lookup.
+- `python -m archeon.verify_cognee` prints a capability matrix and marks
+  `forget` / `improve` as `unsupported` when the installed Cognee runtime does
+  not expose those APIs.
+- `python scripts/demo_lifecycle.py` runs the July 4 lifecycle demo against
+  `demo/atlas-api` using the real ingest pipeline when possible.
+
+Supported demo modes:
+
+- `no Cognee`: extract-only ingest plus lifecycle/orphan reporting
+- `hybrid`: live `remember` / `recall` with lifecycle mutations skipped when
+  node-level APIs are unavailable
+- `full live`: live `remember` / `recall` plus live `forget` / `improve`
+
 ## Not Implemented Yet
 
 - `archeon why` query engine (Member B)
-- Lifecycle `forget()` / `improve()` hooks (Member C)
 - AI coding session log ingestion
 
 ## Status
 
-Ingestion pipeline is wired end-to-end: `archeon ingest` → extractors → JSONL → Cognee `remember()`.
+Ingestion and lifecycle are wired for the July 4 demo path:
+`archeon ingest` → extractors → JSONL → Cognee `remember()` → lifecycle index
+→ capability-checked `forget` / `improve` proofing.
