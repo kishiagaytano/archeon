@@ -5,7 +5,7 @@
 > so no one re-derives state from scratch. Keep it truthful — "done" means
 > merged to `main` (or noted as pending PR).
 >
-> **Last updated:** 2026-07-04 (Day 2) · maintained by Member B (integration/UX pass).
+> **Last updated:** 2026-07-05 (Day 3) · maintained by Member B (integration pass).
 > **Deadline:** 2026-07-05 evening.
 
 ## How to read this
@@ -27,11 +27,16 @@ still works).
 Install: `pip install -e .[cognee]` (add `.[lifecycle]` for the file watcher).
 Combined test suite currently: **50 passed, 1 skipped**.
 
-> **Working-tree note (2026-07-04):** the integration/UX work below — `why`
-> wired to the query engine, the `gaps` / `recover` / `forget` / `feedback` CLI
-> commands, `lifecycle/graph_loader.py`, the unified Rich panel UI, and cognee
-> log suppression — is implemented and passing locally but **not yet committed
-> to `main`** (still on the working tree). Marked 🟡 accordingly until committed.
+> **Update (2026-07-05):** the integration/UX work — `why` wired to the query
+> engine, the `gaps` / `recover` / `forget` / `feedback` CLI commands,
+> `lifecycle/graph_loader.py`, the unified Rich panel UI, and cognee log
+> suppression — is **merged to `main`** (PR #8) and **verified live** against a
+> real ingested store: `gaps` (170 nodes, 0 orphans), `recover` (ADR draft),
+> `feedback` + `forget` (graceful when the runtime lacks improve/forget).
+> The end-to-end **`[cited]` demo works** (OpenAI `gpt-4o-mini` +
+> `text-embedding-3-large` @ 3072 dims — see [KNOWN_ISSUES](KNOWN_ISSUES.md) #10).
+> Fixes landed this pass: red `test_cli_status` (Rich output), and a
+> `feedback`/`forget` crash on `LifecycleOperationError`.
 
 ---
 
@@ -64,9 +69,17 @@ Combined test suite currently: **50 passed, 1 skipped**.
 | C | Full lifecycle demo loop (ingest→query→feedback→re-query→delete→re-query) | 🟡 | `scripts/demo_lifecycle.py` exists; `forget`/`feedback`/`gaps`/`recover` now runnable from the CLI. Live loop still pending a working key (`forget`/`why` currently block on a live cognee recall) |
 | D | Demo script + video prep | ⏳ | CLI UX, `gaps`, `recover` done ahead of schedule (see Day 1 D); script/video still to do |
 
-### DAY 3 — Ship (July 5) — not started
+### DAY 3 — Ship (July 5) — in progress
 
-Docs (`ARCHITECTURE.md`), README polish, Cognee PR bounties, final video/submission.
+| Role | Deliverable | Status | Notes |
+|------|-------------|--------|-------|
+| A | Final ingest fixes, clean-install verify, merge open PRs | ⏳ | |
+| B | `ARCHITECTURE.md` + document every Cognee API + final query check | ✅ | `ARCHITECTURE.md` (incl. Cognee API reference §8), `KNOWN_ISSUES.md`; query-engine suite 15/15. Live round trip blocked by Groq rate limits (documented). |
+| C | Cognee PR bounty submissions, `KNOWN_ISSUES.md`, final lifecycle pass | 🟡 | `KNOWN_ISSUES.md` drafted (B); bounty PRs + final lifecycle pass pending (C, needs human) |
+| D | Final video, README badges/screenshots/GIF, submission | ⏳ | needs human (recording + submission form) |
+
+Cross-cutting fix landed: `archeon status` crash (missing `lifecycle_status`
+import) fixed via PR #6.
 
 ---
 

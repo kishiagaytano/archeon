@@ -40,6 +40,7 @@ from archeon.ingest_pipeline import resolve_github_slug, run_ingest
 from archeon.lifecycle import (
     DeprecatedDecisionRule,
     InvalidVoteError,
+    LifecycleOperationError,
     MissingSourceFileRule,
     NoIncomingEdgesRule,
     ZeroConfidenceRule,
@@ -315,6 +316,17 @@ def forget(
             )
         )
         raise typer.Exit(code=1)
+    except LifecycleOperationError as exc:
+        _emit(
+            _notice(
+                "forget",
+                format_path(file),
+                f"{exc} The installed Cognee runtime may not expose forget()/prune.delete(), "
+                "or the backend is unreachable. Check `archeon status`.",
+                tone="warning",
+            )
+        )
+        raise typer.Exit(code=1)
     _emit(_forget_report(file, forgotten))
 
 
@@ -328,6 +340,17 @@ def feedback(
         normalized = handle_feedback(node_id, vote)
     except InvalidVoteError as exc:
         _emit(_notice("feedback", node_id, str(exc), tone="error"))
+        raise typer.Exit(code=1)
+    except LifecycleOperationError as exc:
+        _emit(
+            _notice(
+                "feedback",
+                node_id,
+                f"{exc} The installed Cognee runtime may not expose improve()/memify(), "
+                "or the backend is unreachable. Check `archeon status` and LLM_API_KEY.",
+                tone="warning",
+            )
+        )
         raise typer.Exit(code=1)
     _emit(_feedback_report(node_id, normalized))
 
@@ -1151,14 +1174,6 @@ def _lifecycle_panel(lifecycle: dict) -> Group:
         table,
         Text(f"Idle (0): {idle_names}", style=PASTEL["gray"]),
     )
-
-    lifecycle = lifecycle_status()
-    typer.echo("Lifecycle status:")
-    typer.echo(f"  forgotten nodes: {lifecycle['forgotten_count']}")
-    typer.echo(f"  improved nodes:  {lifecycle['improved_count']}")
-    typer.echo(f"  feedback events: {lifecycle['feedback_count']}")
-    typer.echo(f"  orphan nodes:    {lifecycle['orphan_count']}")
-    typer.echo(f"  adr drafts:      {len(lifecycle['adr_drafts'])}")
 
 
 def main() -> None:
