@@ -166,35 +166,76 @@ recall()
 Answer with commit/PR citations
 ```
 
-## Lifecycle
+## How It Works
 
-Member C's lifecycle path is capability-checked rather than hard-coded to one
-Cognee version.
+Archeon has two halves: **ingestion** (write side) turns a repo's history into a
+decision graph, and the **query engine** (read side) answers questions against
+it with confidence-scored citations.
 
-- `handle_feedback()` records lifecycle state only after a successful live
-  `improve` / `memify` call.
-- `handle_file_deletion()` resolves remembered handles from the ingest-time
-  lifecycle index first, then falls back to search-based lookup.
-- `python -m archeon.verify_cognee` prints a capability matrix and marks
-  `forget` / `improve` as `unsupported` when the installed Cognee runtime does
-  not expose those APIs.
-- `python scripts/demo_lifecycle.py` runs the July 4 lifecycle demo against
-  `demo/atlas-api` using the real ingest pipeline when possible.
+### 1. From history to a decision graph
 
-Supported demo modes:
+Extractors emit `{source, content, metadata}` records; `ingest_pipeline.py`
+chunks them per source type and calls `memory.remember()`, which hands them to
+Cognee. Cognee's `cognify()` uses an LLM to extract a typed graph — `Decision`,
+`Context`, `Consequence`, `CodeFile`, `Evidence` nodes joined by
+`MOTIVATED_BY`, `RESULTED_IN`, `AFFECTS_FILE`, and `CITED_IN` edges (full spec
+in [`SCHEMA.md`](SCHEMA.md)). `remember()` also stamps each chunk with a
+`[source=... locator=...]` header so provenance survives into the store.
 
-- `no Cognee`: extract-only ingest plus lifecycle/orphan reporting
-- `hybrid`: live `remember` / `recall` with lifecycle mutations skipped when
-  node-level APIs are unavailable
-- `full live`: live `remember` / `recall` plus live `forget` / `improve`
+### 2. From a question to a cited answer
+
+`archeon why "<question>"` runs `query_engine.query()`, which does a **two-pass
+retrieval** against Cognee and shapes the result:
+
+```text
+question
+   ├─ pass 1: GRAPH_COMPLETION  → synthesized natural-language answer
+   └─ pass 2: CHUNKS            → raw source chunks (carry [source=...] headers)
+          ↓
+   assemble → QueryResult{ question, answer, confidence, sources }
+```
+
+- The **answer** comes from the graph-completion pass (hybrid graph + vector).
+- The **citations** come from the chunks pass, parsed back out of the headers.
+- If the completion pass is empty or errors, the engine **falls back** to the
+  chunk text (vector-only) at lower confidence; if nothing comes back at all it
+  reports an `unknown` gap instead of crashing.
+
+### 3. Confidence hierarchy
+
+Every answer is tagged `cited > inferred > unknown`:
+
+| Tier | When | CLI badge |
+|------|------|-----------|
+| **cited** | Backed by recovered `Evidence` (commit / PR / ADR / issue) | `[cited]` |
+| **inferred** | Answer synthesized from the graph, no attributable source | `[inferred]` |
+| **unknown** | No memory found — a gap | `[unknown]` |
+
+Example output:
+
+```text
+[cited] Why did we replace Redis with PostgreSQL?
+
+Sessions had become product data, so PostgreSQL replaced Redis to provide
+transactions, durable rows, and queryable support history.
+
+Sources:
+  - adr ADR-003
+  - pull_request PR-4
+```
+
+Try the full demo query set (10+ questions) once the demo repo is ingested:
+
+```powershell
+python scripts/query_demo.py
+```
 
 ## Not Implemented Yet
 
-- `archeon why` query engine (Member B)
+- Lifecycle `forget()` / `improve()` hooks (Member C — in progress)
 - AI coding session log ingestion
 
 ## Status
 
-Ingestion and lifecycle are wired for the July 4 demo path:
-`archeon ingest` → extractors → JSONL → Cognee `remember()` → lifecycle index
-→ capability-checked `forget` / `improve` proofing.
+- Ingestion pipeline wired end-to-end: `archeon ingest` → extractors → JSONL → Cognee `remember()`.
+- Query engine live: `archeon why` → two-pass recall → `{answer, confidence, sources}` with the `cited > inferred > unknown` hierarchy.

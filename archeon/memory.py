@@ -53,7 +53,31 @@ except Exception as exc:  # pragma: no cover - exercised only without cognee
 
 DEFAULT_DATASET = os.environ.get("ARCHEON_DATASET", "archeon")
 
+# Cognee defaults its databases to a path inside site-packages that is already
+# ~90 chars deep; LanceDB then nests long UUID folders/files under it and blows
+# past the Windows 260-char MAX_PATH limit (os error 3 on write). Relocate the
+# store to a short directory so the full paths stay well under the limit.
+# Override with ARCHEON_COGNEE_HOME.
+COGNEE_HOME = os.environ.get(
+    "ARCHEON_COGNEE_HOME", os.path.join(os.path.expanduser("~"), ".acg")
+)
+
 Rememberable = Union[str, SourceRecord]
+
+_COGNEE_PATHS_CONFIGURED = False
+
+
+def _configure_cognee_paths() -> None:
+    """Point cognee's system/data directories at a short path (once)."""
+    global _COGNEE_PATHS_CONFIGURED
+    if cognee is None or _COGNEE_PATHS_CONFIGURED:
+        return
+    try:
+        cognee.config.system_root_directory(os.path.join(COGNEE_HOME, "sys"))
+        cognee.config.data_root_directory(os.path.join(COGNEE_HOME, "data"))
+    except Exception:  # pragma: no cover - config API drift shouldn't be fatal
+        pass
+    _COGNEE_PATHS_CONFIGURED = True
 
 
 @dataclass(frozen=True)
@@ -122,6 +146,7 @@ def _require_cognee() -> None:
             "`pip install -e .[cognee]` (see SCHEMA.md / README). "
             f"Original import error: {_COGNEE_IMPORT_ERROR!r}"
         )
+    _configure_cognee_paths()
 
 
 def cloud_config() -> CogneeCloudConfig | None:

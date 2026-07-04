@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Edit",
+      "Write",
+      "Bash",
+      "PowerShell"
+    ],
+    "ask": [
+      "Bash(git push)",
+      "Bash(git push:*)",
+      "PowerShell(git push)",
+      "PowerShell(git push:*)"
+    ]
+  }
+}
