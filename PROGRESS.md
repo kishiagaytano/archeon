@@ -54,7 +54,7 @@ Combined test suite currently: **49 passed, 1 skipped**.
 | Role | Deliverable | Status | Notes |
 |------|-------------|--------|-------|
 | A | Edge cases (no-PR/empty/binary/merge), 2nd repo, incremental ingest | 🟡 | `--incremental` / `--extract-only` already implemented ahead of schedule |
-| B | Query quality tuning, 10+ queries, vector-only fallback | ⏳ | engine has an `inferred` fallback path; tuning + query set pending |
+| B | Query quality tuning, 10+ queries, vector-only fallback | 🟡 | two-pass retrieval (GRAPH_COMPLETION + CHUNKS), vector-only fallback, 12 demo queries (`archeon/demo_queries.py` + `scripts/query_demo.py`), README "How It Works". Live answers are high-quality/`inferred`; true `cited` needs a clean full ingest (see note). |
 | C | Full lifecycle demo loop (ingest→query→feedback→re-query→delete→re-query) | 🟡 | `scripts/demo_lifecycle.py` exists; end-to-end pass pending a key |
 | D | Demo script + video prep | ⏳ | |
 
@@ -111,6 +111,19 @@ Docs (`ARCHITECTURE.md`), README polish, Cognee PR bounties, final video/submiss
 | B → D: `query_engine.query()` → `{answer, confidence, sources}` → CLI | ✅ shape ready; Rich rendering is D's Day 1 |
 | C → B: `forget()` prunes → `recall()` reflects | ✅ share `DecisionGraph`; live loop needs a key |
 | C → D: lifecycle status → CLI commands | ⏳ `gaps`/`recover` commands pending |
+
+## Known limitation — citations (`cited` tier)
+
+The query engine's citation pass reads the `[source=...]` headers `remember()`
+embeds, but two things currently keep answers at `inferred` rather than `cited`
+in live runs:
+1. **Cognee session memory is on by default** (1.2.2), so past Q&A ("Got it.")
+   gets written back into the store and pollutes the `CHUNKS` retrieval.
+2. **No clean full-repo ingest has completed** — the demo cognify hits Groq's
+   free-tier rate limit at ~35 chunks.
+Fix path: disable session memory, throttle/batch the ingest, re-ingest clean.
+The two-pass engine and confidence logic are correct and unit-tested; this is a
+data/quota issue, not a code bug.
 
 ## Open items / next actions
 
