@@ -149,6 +149,14 @@ def status() -> None:
         if extract_dirs:
             typer.echo(f"Extract directories: {len(extract_dirs)}")
 
+    lifecycle = lifecycle_status()
+    typer.echo("Lifecycle status:")
+    typer.echo(f"  forgotten nodes: {lifecycle['forgotten_count']}")
+    typer.echo(f"  improved nodes:  {lifecycle['improved_count']}")
+    typer.echo(f"  feedback events: {lifecycle['feedback_count']}")
+    typer.echo(f"  orphan nodes:    {lifecycle['orphan_count']}")
+    typer.echo(f"  adr drafts:      {len(lifecycle['adr_drafts'])}")
+
 
 def main() -> None:
     """Entrypoint used by the console script."""

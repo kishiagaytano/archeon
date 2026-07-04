@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from archeon.lifecycle import detect_orphan_nodes
 from archeon.lifecycle.orphan_detector import (
+    DeprecatedDecisionRule,
     MissingSourceFileRule,
     NoIncomingEdgesRule,
     ZeroConfidenceRule,
@@ -43,5 +44,13 @@ def test_missing_source_file_rule(tmp_path) -> None:
 def test_deprecated_decision_is_orphan() -> None:
     graph = atlas_graph()
     graph.decisions[0].status = DecisionStatus.DEPRECATED
-    orphans = detect_orphan_nodes(graph)
+    orphans = detect_orphan_nodes(graph, rules=(DeprecatedDecisionRule(),))
     assert any(isinstance(node, Decision) for node in orphans)
+
+
+def test_default_rules_match_roadmap_confidence_zero_behavior() -> None:
+    graph = orphan_graph()
+    orphans = detect_orphan_nodes(graph)
+    assert len(orphans) == 1
+    assert isinstance(orphans[0], Decision)
+    assert orphans[0].confidence is ConfidenceTier.UNKNOWN

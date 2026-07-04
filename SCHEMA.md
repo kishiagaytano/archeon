@@ -112,19 +112,39 @@ which exposes:
 
 - `remember(items, dataset=..., cognify=True)` — `cognee.add()` then
   `cognee.cognify()`; accepts strings or `SourceRecord`s.
+- `remember_with_receipts(...)` — same ingest path, but preserves any stable ids
+  returned by `cognee.add()` so lifecycle flows can target real remembered
+  handles later.
 - `recall(query, search_type=..., top_k=...)` — `cognee.search()`, defaulting to
   `GRAPH_COMPLETION` (hybrid graph + vector).
-- `forget_all()` — `cognee.prune()` for resets (node-level `forget()` is Member C).
-- `remember_sync` / `recall_sync` — `asyncio.run` wrappers for the CLI.
+- `capabilities()` — reports whether the current Cognee runtime supports live
+  `forget`, `improve`, or `memify` operations.
+- `forget()` / `improve()` — provider-facing wrappers for node-level lifecycle
+  mutations when the runtime exposes them.
+- `forget_all()` — `cognee.prune()` for blunt resets.
+- `remember_sync` / `recall_sync` and related sync wrappers — `asyncio.run`
+  helpers for the CLI, demo script, and smoke tests.
 
 Cognee is an **optional** dependency; `memory.cognee_available()` lets the CLI
 degrade gracefully when it is not installed.
 
+Node-level lifecycle support is intentionally **capability-checked**. Archeon
+ships the orchestration layer now, but the live backend behavior still depends
+on which Cognee APIs the installed runtime exposes:
+
+- if `forget` or `prune.delete` exists, file-deletion lifecycle can target live
+  handles captured during ingest
+- if `improve` or `memify` exists, feedback can be applied to live handles
+- if those APIs are missing, Archeon reports `unsupported` instead of pretending
+  lifecycle mutation succeeded
+
 ### Setup
 
 ```powershell
-pip install -e .[cognee]     # installs cognee alongside Archeon
-$env:LLM_API_KEY = "sk-..."  # required for a full cognify/search run
+pip install -e .[cognee,lifecycle]     # optional watchdog support for file watching
+$env:COGNEE_BASE_URL = "https://your-tenant.aws.cognee.ai"  # optional Cloud mode
+$env:COGNEE_API_KEY = "your-cognee-cloud-key"               # optional Cloud mode
+$env:LLM_API_KEY = "sk-..."                                  # local/direct provider mode
 ```
 
 Optional environment variables:
@@ -132,10 +152,13 @@ Optional environment variables:
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `ARCHEON_DATASET` | `archeon` | Cognee dataset name to read/write. |
+| `COGNEE_BASE_URL` | — | Optional Cognee Cloud tenant URL used with `COGNEE_API_KEY`. |
+| `COGNEE_API_KEY` | — | Optional Cognee Cloud API key; when both Cloud vars are present, Archeon calls `cognee.serve()` before memory operations. |
 | `LLM_API_KEY` | — | Passed through to Cognee for `cognify`/`search`. |
 
-Verify the round trip with:
+Verify the live capability surface with:
 
 ```powershell
 python -m archeon.verify_cognee
+python scripts/demo_lifecycle.py
 ```

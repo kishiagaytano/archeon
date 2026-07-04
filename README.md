@@ -20,21 +20,23 @@ git clone https://github.com/kishiagaytano/archeon.git
 cd archeon
 python -m venv .venv
 .\.venv\Scripts\activate
-pip install -e ".[cognee,dev]"
+pip install -e ".[cognee,lifecycle,dev]"
 ```
 
 Optional environment variables:
 
 | Variable | Purpose |
 |----------|---------|
-| `LLM_API_KEY` | Required for Cognee `cognify` / search during full ingest |
+| `COGNEE_BASE_URL` + `COGNEE_API_KEY` | Route memory operations to a Cognee Cloud tenant |
+| `LLM_API_KEY` | Required for local/direct-provider `cognify` / search when not using Cognee Cloud |
 | `GITHUB_TOKEN` | Higher GitHub API rate limits for PR extraction |
 | `ARCHEON_DATASET` | Cognee dataset name (default: `archeon`) |
 
-Verify Cognee is wired correctly:
+Verify the live Cognee surface:
 
 ```powershell
 python -m archeon.verify_cognee
+python scripts/demo_lifecycle.py
 ```
 
 ## Quick Start
@@ -68,7 +70,7 @@ archeon ingest .test-repos/tamsi_ai --incremental
 | `archeon ingest <repo> --incremental` | Only process new commits since last run |
 | `archeon ingest <repo> --github owner/repo` | Include GitHub PRs and linked issues |
 | `archeon why <file>` | Explain why code exists (query engine — Member B) |
-| `archeon status` | CLI + Cognee availability |
+| `archeon status` | CLI + Cognee availability + lifecycle counters |
 
 ## Data Sources
 

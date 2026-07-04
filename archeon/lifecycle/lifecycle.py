@@ -7,12 +7,16 @@ from typing import Optional
 from ..schema import DecisionGraph
 from .feedback import normalize_vote
 from .logger import get_logger
-from .provider import CogneeProvider, MemoryProvider, MockProvider
+from .provider import CogneeProvider, MemoryProvider
 from .state import LifecycleState, get_state, reset_state
 
 logger = get_logger(__name__)
 
 _DEFAULT_PROVIDER: MemoryProvider | None = None
+
+
+class LifecycleOperationError(RuntimeError):
+    """Raised when a lifecycle backend operation fails."""
 
 
 def _get_provider(
@@ -51,7 +55,9 @@ def handle_file_deletion(
     for node_id in node_ids:
         if node_id in active_state.forgotten_nodes:
             continue
-        active_provider.forget(node_id)
+        if not active_provider.forget(node_id):
+            logger.warning("Node forget failed: %s (file: %s)", node_id, path)
+            continue
         active_state.record_forget(node_id, file_path=path)
         forgotten.append(node_id)
         logger.info("Node forgotten: %s (file: %s)", node_id, path)
@@ -78,7 +84,13 @@ def handle_feedback(
     normalized = normalize_vote(vote)
 
     logger.info("Feedback received: %s on %s", normalized, node_id)
-    active_provider.improve(node_id, signal=normalized)
+    if not active_provider.improve(node_id, signal=normalized):
+        message = (
+            f"Feedback could not be applied for {node_id!r}; "
+            "improve()/memify() backend is unavailable or failed."
+        )
+        logger.warning(message)
+        raise LifecycleOperationError(message)
     active_state.record_improve(node_id, normalized)
     logger.info("Node improved: %s (vote=%s)", node_id, normalized)
     return normalized

@@ -73,8 +73,6 @@ class DeprecatedDecisionRule:
 
 DEFAULT_RULES: tuple[OrphanRule, ...] = (
     ZeroConfidenceRule(),
-    NoIncomingEdgesRule(),
-    DeprecatedDecisionRule(),
 )
 
 
