@@ -77,6 +77,19 @@
   (`Get-Process python | Stop-Process -Force`) or point `ARCHEON_COGNEE_HOME` at a
   fresh dir before retrying.
 
+### 10. LanceDB "Spill" IO error with 1536-dim embeddings
+- **Cause:** Cognee's LanceDB vector path is built around **3072-dim** vectors
+  (its default embedder is `openai/text-embedding-3-large`). Using a 1536-dim
+  model (`openai/text-embedding-3-small`, `gemini/text-embedding-004`) trips
+  `LanceError(IO): Execution error: Spill has sent an error` during
+  `add_data_points`. A machine reboot does **not** clear it — it is
+  dimension-related, not stale native state.
+- **Impact:** Ingest fails at the vector-write step even though LLM extraction
+  succeeded.
+- **Workaround:** Use a **3072-dim** embedder. Verified working config:
+  `EMBEDDING_MODEL=openai/text-embedding-3-large` + `EMBEDDING_DIMENSIONS=3072`.
+  This is the recommended default; the demo `[cited]` run uses it.
+
 ## Cosmetic
 
 ### 9. Third-party deprecation warnings
@@ -92,3 +105,11 @@
   `test_cli_status.py` guards it.
 - **Silent no-op test** — a stale `_CONNECTED_CLOUD_URL` monkeypatch (renamed to
   `_CONNECTED_CLOUD_CONTEXT`). **Fixed** alongside the above.
+- **`archeon status` red test after the UX merge** — the Rich refactor renamed
+  the lifecycle section, and Rich cropped the panel to `...` under CliRunner's
+  narrow non-TTY capture. **Fixed**: the test forces a terminal size and matches
+  the new output; removed the dead plain-text `typer.echo` block left in `cli.py`.
+- **`archeon feedback` / `forget` crashed** with an unhandled
+  `LifecycleOperationError` when the Cognee runtime does not expose
+  improve/memify/forget. **Fixed**: both commands now catch it and render a
+  graceful warning panel instead of a traceback.
