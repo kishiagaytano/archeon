@@ -20,6 +20,21 @@ The goal is not to explain what the code does. The goal is to reconstruct why en
 - **Python 3.10+**
 - **git** on your PATH (required for commit extraction from local clones)
 - Network access for GitHub PR extraction (optional)
+- **Your own LLM provider key _or_ Cognee Cloud account** — required to build the
+  decision graph (`cognify`) and answer `archeon why`. Archeon ships **no** key;
+  you set your own via `LLM_API_KEY` or `COGNEE_BASE_URL` + `COGNEE_API_KEY`
+  (see [Environment variables](#environment-variables)). Graph creation is billed
+  to whichever key you configure.
+
+> **Note:** Extract-only mode (`archeon ingest <repo> --extract-only`) needs **no
+> key** and writes JSONL for free. The API key is only needed once you build the
+> graph or run queries.
+
+> **Testing / evaluation:** Don't have a key and just want to try the full
+> graph + `archeon why` flow? You can **request a temporary testing LLM API key**
+> by [opening a GitHub issue](https://github.com/kishiagaytano/archeon/issues/new)
+> or emailing [jhezraang@gmail.com](mailto:jhezraang@gmail.com). The key is shared
+> privately for evaluation only — please don't commit it or share it further.
 
 ### Install
 
