@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "archeon"
 version = "0.1.0"
-description = "A Day 0 CLI skeleton for developer decision memory powered by Cognee."
+description = "Developer decision memory powered by Cognee."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }

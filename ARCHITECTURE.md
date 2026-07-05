@@ -137,7 +137,8 @@ Design guarantees:
 - **Graceful degradation.** Each pass failure is swallowed (`_recall` returns
   `[]`); the engine falls back to vector-only chunk text, and only reports an
   `unknown` gap when *nothing* comes back. `query()` never raises — the CLI can
-  always render something. `QueryResult.is_gap` feeds a future `archeon gaps`.
+  always render something. `QueryResult.is_gap` flags an unanswerable question
+  as a memory gap in the read path.
 - **Backend-tolerant parsing.** `_result_to_text()` handles strings, Cognee's
   `{'search_result': [...]}` envelope, and graph-fragment dicts, so an upstream
   `search_type` change doesn't break shaping.
@@ -295,5 +296,8 @@ Config is read from a `.env` file (git-ignored) plus the process environment.
 - **Cognee session memory** can pollute `CHUNKS` retrieval with past Q&A; disable
   with `CACHING=false` and use a fresh store dir for clean citations.
 - **Cloud LLM offload** is not yet complete (see §7.1).
-- **`archeon gaps` / `recover`** commands (D) build on `QueryResult.is_gap` and
-  the ADR draft generator but are not yet wired.
+- **`archeon gaps` / `recover`** are wired: both reconstruct a `DecisionGraph`
+  from the JSONL extracts (`lifecycle/graph_loader.py`); `gaps` runs orphan
+  detection over it, and `recover <id>` drafts an ADR from a node via the ADR
+  generator. They read the persisted extracts rather than Cognee directly, so
+  they run offline (no LLM/Cognee call).
