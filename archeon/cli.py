@@ -255,13 +255,19 @@ def ingest(
 
 @app.command()
 def why(
-    file: Path = typer.Argument(
-        ...,
-        help="Path to the file to explain.",
+    file: Path | None = typer.Argument(
+        None,
+        help="Path to the file to explain (omit when using --question).",
         exists=False,
         file_okay=True,
         dir_okay=False,
         resolve_path=True,
+    ),
+    question: str | None = typer.Option(
+        None,
+        "--question",
+        "-q",
+        help="Ask a free-text question directly instead of explaining a file.",
     ),
     search_type: str | None = typer.Option(
         None,
@@ -279,15 +285,33 @@ def why(
         help="Seconds to wait for the memory backend before returning a gap.",
     ),
 ) -> None:
-    """Explain why a file exists using the query engine (Member B)."""
-    question = _file_to_question(file)
+    """Explain why code exists (query engine — Member B).
+
+    Pass a FILE to explain, or ask a free-text question with --question/-q.
+    """
+    if question:
+        query_text = question
+    elif file is not None:
+        query_text = _file_to_question(file)
+    else:
+        _emit(
+            _notice(
+                "why",
+                "Decision Lookup",
+                'Provide a FILE to explain, or ask a question with --question/-q. '
+                'Example: archeon why -q "Why did we replace Redis with PostgreSQL?"',
+                tone="error",
+            )
+        )
+        raise typer.Exit(code=1)
+
     try:
         result = _run_with_timeout(
-            query_sync, question, search_type=search_type, top_k=top_k, timeout=timeout
+            query_sync, query_text, search_type=search_type, top_k=top_k, timeout=timeout
         )
     except TimeoutError:
         result = QueryResult(
-            question=question,
+            question=query_text,
             answer=(
                 f"Query timed out after {timeout:.0f}s waiting on the memory backend "
                 "(Cognee/LLM). Check LLM_API_KEY quota/billing, or raise --timeout."
@@ -657,16 +681,17 @@ def _why_chain_tree(result: QueryResult) -> Tree:
     return root
 
 
-def _evidence_table(file: Path, result: QueryResult) -> Table:
+def _evidence_table(file: Path | None, result: QueryResult) -> Table:
     table = Table(box=None, expand=True, padding=(0, 2))
     table.add_column("Type", width=14, style=f"bold {PASTEL['gray']}", no_wrap=True)
     table.add_column("Reference", width=24, no_wrap=True, overflow="ellipsis")
     table.add_column("Explanation", ratio=4, style=PASTEL["gray"], overflow="fold")
-    table.add_row(
-        "File",
-        _link_text(format_path(file), str(file)),
-        Text("Target file for the decision question.", style=PASTEL["gray"]),
-    )
+    if file is not None:
+        table.add_row(
+            "File",
+            _link_text(format_path(file), str(file)),
+            Text("Target file for the decision question.", style=PASTEL["gray"]),
+        )
     if result.sources:
         for src in result.sources:
             stype = src.source_type.value
@@ -691,7 +716,13 @@ def _confidence_line(tier: ConfidenceTier) -> Text:
     return line
 
 
-def _why_report(file: Path, result: QueryResult) -> Panel:
+def _question_label(question: str, limit: int = 60) -> str:
+    """Short, single-line label for a free-text question (panel title/context)."""
+    collapsed = " ".join(question.split())
+    return collapsed if len(collapsed) <= limit else collapsed[: limit - 3] + "..."
+
+
+def _why_report(file: Path | None, result: QueryResult) -> Panel:
     tier = result.confidence
     body = Group(
         _section_heading("DECISION", color=PASTEL["purple"]),
@@ -711,10 +742,11 @@ def _why_report(file: Path, result: QueryResult) -> Panel:
 
     subtitle = Text("confidence ", style=PASTEL["gray"])
     subtitle.append_text(_confidence_badge(tier.value))
+    context = format_path(file) if file is not None else _question_label(result.question)
     return _panel(
         body,
         command="why",
-        context=format_path(file),
+        context=context,
         subtitle=subtitle,
         border=_tier_color(tier.value),
     )

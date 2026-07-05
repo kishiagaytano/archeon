@@ -145,6 +145,7 @@ archeon ingest .test-repos/tamsi_ai --incremental
 | `archeon ingest <repo> --incremental` | Only process new commits since last run |
 | `archeon ingest <repo> --github owner/repo` | Include GitHub PRs and linked issues |
 | `archeon why <file>` | Explain why code exists (query engine — Member B) |
+| `archeon why -q "<question>"` | Ask a free-text decision question directly |
 | `archeon gaps` | List undocumented / orphaned decisions (lifecycle orphan detection) |
 | `archeon recover <id>` | Draft an ADR for a decision id from `archeon gaps` (lifecycle ADR recovery) |
 | `archeon forget <file>` | Forget decision nodes tied to a removed file (forget-on-delete) |
