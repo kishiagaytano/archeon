@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Archeon — logo preview</title>
+<style>
+  :root{--accent:#6c4ff0;--ink:#131826;--muted:#6b7280;--bd:#e5e7eb;--bg:#f5f6fa;--card:#fff}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);padding:48px}
+  h1{font-size:26px;margin:0 0 4px;letter-spacing:-.02em}
+  .sub{color:var(--muted);margin:0 0 40px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:28px}
+  .card.dark{background:#0b0f1a;border-color:#232a3d;color:#e6e9f2}
+  .lbl{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 20px}
+  .dark .lbl{color:#8a93a8}
+  .row{display:flex;align-items:center;gap:28px;flex-wrap:wrap}
+  .glyph{color:var(--accent)}
+  .dark .glyph{color:#9d8bff}
+  .lockup{display:inline-flex;align-items:center;gap:12px;font-weight:800;letter-spacing:-.02em}
+  .lockup.big{font-size:32px}.lockup.small{font-size:18px}
+  .icons{display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap}
+  .icons figure{margin:0;text-align:center}
+  .icons figcaption{font-size:11px;color:var(--muted);margin-top:8px}
+  img.svg{display:block}
+</style>
+</head>
+<body>
+  <h1>Archeon logo</h1>
+  <p class="sub">Vector (SVG) — crisp at every size, recolorable, ~1&nbsp;KB each. The mark is an “A” traced from a decision graph: two sources → one root.</p>
+
+  <div class="grid">
+    <div class="card">
+      <p class="lbl">Glyph · scales (light)</p>
+      <div class="row">
+        <span class="glyph"><img class="svg" src="logo-glyph.svg" width="72" height="72" alt=""></span>
+        <span class="glyph"><img class="svg" src="logo-glyph.svg" width="48" height="48" alt=""></span>
+        <span class="glyph"><img class="svg" src="logo-glyph.svg" width="32" height="32" alt=""></span>
+        <span class="glyph"><img class="svg" src="logo-glyph.svg" width="20" height="20" alt=""></span>
+        <span class="glyph"><img class="svg" src="logo-glyph.svg" width="16" height="16" alt=""></span>
+      </div>
+    </div>
+
+    <div class="card dark">
+      <p class="lbl">Glyph · scales (dark)</p>
+      <div class="row">
+        <span class="glyph"><img class="svg" src="logo-glyph.svg" width="72" height="72" alt=""></span>
+        <span class="glyph"><img class="svg" src="logo-glyph.svg" width="48" height="48" alt=""></span>
+        <span class="glyph"><img class="svg" src="logo-glyph.svg" width="32" height="32" alt=""></span>
+        <span class="glyph"><img class="svg" src="logo-glyph.svg" width="20" height="20" alt=""></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="lbl">App icon (gradient)</p>
+      <div class="icons">
+        <figure><img class="svg" src="logo-icon.svg" width="96" height="96" alt=""><figcaption>96px</figcaption></figure>
+        <figure><img class="svg" src="logo-icon.svg" width="64" height="64" alt=""><figcaption>64px</figcaption></figure>
+        <figure><img class="svg" src="logo-icon.svg" width="40" height="40" alt=""><figcaption>40px</figcaption></figure>
+        <figure><img class="svg" src="logo-icon.svg" width="28" height="28" alt=""><figcaption>28px</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="lbl">Horizontal lockup (light)</p>
+      <div class="row" style="flex-direction:column;align-items:flex-start;gap:24px">
+        <span class="lockup big"><span class="glyph"><img class="svg" src="logo-glyph.svg" width="36" height="36" alt=""></span>Archeon</span>
+        <span class="lockup small"><span class="glyph"><img class="svg" src="logo-glyph.svg" width="22" height="22" alt=""></span>Archeon</span>
+      </div>
+    </div>
+
+    <div class="card dark">
+      <p class="lbl">Horizontal lockup (dark)</p>
+      <div class="row" style="flex-direction:column;align-items:flex-start;gap:24px">
+        <span class="lockup big"><span class="glyph"><img class="svg" src="logo-glyph.svg" width="36" height="36" alt=""></span>Archeon</span>
+        <span class="lockup small"><span class="glyph"><img class="svg" src="logo-glyph.svg" width="22" height="22" alt=""></span>Archeon</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
