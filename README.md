@@ -13,7 +13,13 @@ The goal is not to explain what the code does. The goal is to reconstruct why en
 
 ## Installation
 
-Requires **Python 3.10+** and **git** (for commit extraction).
+### Prerequisites
+
+- **Python 3.10+**
+- **git** on your PATH (required for commit extraction from local clones)
+- Network access for GitHub PR extraction (optional)
+
+### Install
 
 ```powershell
 git clone https://github.com/kishiagaytano/archeon.git
@@ -23,16 +29,85 @@ python -m venv .venv
 pip install -e ".[cognee,lifecycle,dev]"
 ```
 
-Optional environment variables:
+For **extract-only** development (JSONL output, no Cognee), the base install is enough:
+
+```powershell
+pip install -e ".[dev]"
+```
+
+### Verify ingestion setup (Member A — keyless)
+
+These steps confirm extractors and the ingest pipeline work **without** an LLM key:
+
+```powershell
+archeon status
+archeon ingest demo/atlas-api --extract-only
+```
+
+Expected: **27 records** extracted, JSONL written to `.archeon/extracts/atlas-api/all.jsonl`.
+
+Run the ingestion test suite:
+
+```powershell
+python -m pytest tests/test_git_extractor.py tests/test_pr_extractor.py tests/test_readme_extractor.py tests/test_jsonl_io.py tests/test_ingest_pipeline.py -q
+```
+
+Try a real git repository (clone first — git extractor needs a `.git` directory):
+
+```powershell
+git clone https://github.com/randreitomas/tamsi_ai.git .test-repos/tamsi_ai
+archeon ingest .test-repos/tamsi_ai --github randreitomas/tamsi_ai --extract-only
+```
+
+Re-run with only new commits:
+
+```powershell
+archeon ingest .test-repos/tamsi_ai --incremental
+```
+
+Run extractors individually (optional):
+
+```powershell
+python -m archeon.extractors.git_extractor .test-repos/tamsi_ai -o .archeon/commits.jsonl
+python -m archeon.extractors.readme_extractor demo/atlas-api -o .archeon/readme.jsonl
+python -m archeon.extractors.pr_extractor kishiagaytano/archeon -o .archeon/prs.jsonl
+```
+
+### Full ingest (Cognee remember)
+
+To write into Cognee and build the lifecycle index for `archeon forget`, install
+the Cognee extra and provide a provider key:
+
+```powershell
+pip install -e ".[cognee,dev]"
+$env:LLM_API_KEY = "sk-..."
+archeon ingest demo/atlas-api
+```
+
+Or use Cognee Cloud:
+
+```powershell
+$env:COGNEE_BASE_URL = "https://<tenant>.aws.cognee.ai"
+$env:COGNEE_API_KEY = "<cloud-api-key>"
+archeon ingest demo/atlas-api
+```
+
+Outputs after a live ingest:
+
+- `.archeon/extracts/<repo>/all.jsonl` — extracted records
+- `.archeon/extracts/<repo>/lifecycle_index.json` — file → memory handle map (for lifecycle)
+- `.archeon/state/<repo>.json` — incremental ingest checkpoint
+
+### Environment variables
 
 | Variable | Purpose |
 |----------|---------|
 | `COGNEE_BASE_URL` + `COGNEE_API_KEY` | Route memory operations to a Cognee Cloud tenant |
 | `LLM_API_KEY` | Required for local/direct-provider `cognify` / search when not using Cognee Cloud |
-| `GITHUB_TOKEN` | Higher GitHub API rate limits for PR extraction |
+| `GITHUB_TOKEN` | Higher GitHub API rate limits for PR/issue extraction (60/hr unauthenticated) |
 | `ARCHEON_DATASET` | Cognee dataset name (default: `archeon`) |
 
-Verify the live Cognee surface:
+### Verify Cognee + lifecycle (full stack)
 
 ```powershell
 python -m archeon.verify_cognee
@@ -100,7 +175,7 @@ repo path
      • metadata tags: source_type, confidence_tier, timestamp, author
      • writes .archeon/extracts/<repo>/*.jsonl
           ↓
-   memory.remember_sync()  → Cognee
+   memory.remember_with_receipts_sync()  → Cognee + lifecycle_index.json
 ```
 
 ### Edge cases handled
