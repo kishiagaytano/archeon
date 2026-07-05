@@ -11,6 +11,8 @@ Archeon is a developer memory tool powered by Cognee. It is designed to answer t
 
 The goal is not to explain what the code does. The goal is to reconstruct why engineering decisions were made, with citations back to commits, PRs, issues, and docs.
 
+**🌐 Live demo:** [kishiagaytano.github.io/archeon](https://kishiagaytano.github.io/archeon/)
+
 ## Installation
 
 ### Prerequisites
@@ -35,7 +37,7 @@ For **extract-only** development (JSONL output, no Cognee), the base install is 
 pip install -e ".[dev]"
 ```
 
-### Verify ingestion setup (Member A — keyless)
+### Verify ingestion setup (keyless)
 
 These steps confirm extractors and the ingest pipeline work **without** an LLM key:
 
@@ -144,7 +146,7 @@ archeon ingest .test-repos/tamsi_ai --incremental
 | `archeon ingest <repo> --extract-only` | Write JSONL only (no Cognee) |
 | `archeon ingest <repo> --incremental` | Only process new commits since last run |
 | `archeon ingest <repo> --github owner/repo` | Include GitHub PRs and linked issues |
-| `archeon why <file>` | Explain why code exists (query engine — Member B) |
+| `archeon why <file>` | Explain why code exists (query engine) |
 | `archeon why -q "<question>"` | Ask a free-text decision question directly |
 | `archeon gaps` | List undocumented / orphaned decisions (lifecycle orphan detection) |
 | `archeon recover <id>` | Draft an ADR for a decision id from `archeon gaps` (lifecycle ADR recovery) |
