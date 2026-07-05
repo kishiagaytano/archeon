@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Archeon — Developer memory for the "why" behind your code</title>
+  <meta name="description" content="Archeon reconstructs why engineering decisions were made — with citations back to the commits, PRs, issues, and docs that ordinary code search can't explain." />
+  <meta property="og:title" content="Archeon — Developer memory for the why behind your code" />
+  <meta property="og:description" content="Reconstruct why engineering decisions were made, with citations to commits, PRs, issues, and docs." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236c4ff0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3'/%3E%3C/svg%3E" />
+</head>
+<body>
+
+  <!-- ============================================================ NAV ===== -->
+  <header class="nav" id="nav">
+    <div class="container nav-inner">
+      <a href="#top" class="brand">
+        <svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"/>
+        </svg>
+        Archeon
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#problem">Why</a>
+        <a href="#how">How it works</a>
+        <a href="#confidence">Confidence</a>
+        <a href="#sources">Sources</a>
+        <a href="#quickstart">Quick start</a>
+      </nav>
+      <div class="nav-actions">
+        <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle theme">
+          <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        </button>
+        <a class="btn btn-primary" href="https://github.com/kishiagaytano/archeon" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2A10 10 0 0 0 8.8 21.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.4-2.2-.2-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.3 4.8-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5A10 10 0 0 0 12 2Z"/></svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+
+    <!-- ========================================================= HERO ===== -->
+    <section class="hero">
+      <div class="hero-glow" aria-hidden="true"></div>
+      <div class="container hero-inner">
+        <div>
+          <span class="pill"><span class="dot"></span> Powered by Cognee · knowledge-graph memory</span>
+          <h1>The code is preserved.<br /><span class="grad">The reasoning is lost.</span></h1>
+          <p class="hero-sub">
+            Archeon is a developer memory tool that reconstructs <em>why</em> engineering
+            decisions were made — with citations back to the commits, PRs, issues, and docs
+            that ordinary code search can never explain.
+          </p>
+          <div class="hero-cta">
+            <a class="btn btn-primary" href="#quickstart">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              Get started
+            </a>
+            <a class="btn btn-secondary" href="#how">See how it works</a>
+          </div>
+          <div class="hero-meta">
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Citations to real evidence</span>
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Confidence-scored answers</span>
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Runs on your git history</span>
+          </div>
+        </div>
+
+        <div class="terminal reveal" aria-hidden="true">
+          <div class="terminal-bar">
+            <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+            <span class="title">archeon — zsh</span>
+          </div>
+          <div class="terminal-body">
+            <div><span class="prompt">$</span> <span class="cmd">archeon why "why did we replace Redis with PostgreSQL?"</span></div>
+            <br />
+            <div><span class="badge-cited">[cited]</span> Why did we replace Redis with PostgreSQL?</div>
+            <span class="answer">Sessions had become product data, so PostgreSQL replaced Redis to
+provide transactions, durable rows, and queryable support history.</span>
+            <div><span class="label">Sources:</span></div>
+            <div>  <span class="src">- adr</span> ADR-003</div>
+            <div>  <span class="src">- pull_request</span> PR-4</div>
+            <br />
+            <div><span class="prompt">$</span> <span class="cursor"></span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================== PROBLEM ===== -->
+    <section class="problem section" id="problem">
+      <div class="container problem-grid">
+        <div class="reveal">
+          <span class="eyebrow">The missing half of your codebase</span>
+          <blockquote>
+            Engineering teams are good at preserving code. They are much worse at
+            preserving the <span class="accent">reasoning behind the code.</span>
+          </blockquote>
+          <p class="hero-sub" style="max-width:46ch;margin-top:24px;">
+            Six months later, the decision is a mystery. The person who made it has moved
+            on. The context lives in a Slack thread nobody can find. Archeon answers the
+            questions <code>grep</code> can't.
+          </p>
+        </div>
+        <div class="qlist reveal">
+          <div class="q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg> Why did we switch from Redis to PostgreSQL?</div>
+          <div class="q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg> Why was FastAPI chosen over Flask?</div>
+          <div class="q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg> What alternatives did the team reject?</div>
+          <div class="q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg> Which PR introduced this architectural decision?</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================== FEATURES ===== -->
+    <section class="section" id="features">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">What it captures</span>
+          <h2>Reasoning, extracted from everywhere it hides</h2>
+          <p>Archeon reads the trail your team already leaves behind and turns it into a queryable decision graph.</p>
+        </div>
+        <div class="grid-3">
+          <div class="feature reveal">
+            <div class="feature-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg></div>
+            <h3>Git commit history</h3>
+            <p>Hashes, authors, dates, messages, changed files, and diff summaries — the raw record of every change, tagged as cited evidence.</p>
+          </div>
+          <div class="feature reveal">
+            <div class="feature-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg></div>
+            <h3>Pull requests &amp; issues</h3>
+            <p>PR bodies, review comments, and the issues they link to — pulled straight from the GitHub API where most rationale actually lives.</p>
+          </div>
+          <div class="feature reveal">
+            <div class="feature-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="14" y2="17"/></svg></div>
+            <h3>ADRs, docs &amp; READMEs</h3>
+            <p>Architecture decision records and doc write-ups split by heading, so long-form reasoning becomes individually retrievable.</p>
+          </div>
+          <div class="feature reveal">
+            <div class="feature-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+            <h3>Inline code rationale</h3>
+            <p>Comments and docstrings that explain <em>why</em> a line exists — captured as inferred signal alongside the harder evidence.</p>
+          </div>
+          <div class="feature reveal">
+            <div class="feature-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+            <h3>Cited, always</h3>
+            <p>Every chunk is stamped with a <code>[source= locator=]</code> header so provenance survives all the way into the answer.</p>
+          </div>
+          <div class="feature reveal">
+            <div class="feature-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6M6 20V10M18 20V4"/></svg></div>
+            <h3>Incremental &amp; edge-safe</h3>
+            <p>Re-run on only new commits. Merge commits, empty commits, binary files, and repos without PRs are all handled gracefully.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================== HOW-IT ===== -->
+    <section class="section" id="how" style="background:var(--surface-2);border-block:1px solid var(--border);">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">How it works</span>
+          <h2>From raw history to a cited answer</h2>
+          <p>Two halves: ingestion turns your repo into a decision graph, and the query engine answers questions against it.</p>
+        </div>
+        <div class="steps">
+          <div class="step reveal">
+            <div class="step-num"></div>
+            <h3>Ingest</h3>
+            <p>Extractors emit <code>{source, content, metadata}</code> records from git, PRs, docs, and comments — normalized into newline-delimited JSON.</p>
+          </div>
+          <div class="step reveal">
+            <div class="step-num"></div>
+            <h3>Build the graph</h3>
+            <p>Cognee's <code>cognify()</code> extracts a typed graph — Decision, Context, Consequence, and Evidence nodes joined by motivated-by and results-in edges.</p>
+          </div>
+          <div class="step reveal">
+            <div class="step-num"></div>
+            <h3>Recall</h3>
+            <p><code>archeon why</code> runs two-pass retrieval: one pass synthesizes the answer, the other recovers the source chunks behind it.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================== CONFIDENCE ===== -->
+    <section class="confidence section" id="confidence">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Trust, made explicit</span>
+          <h2>Every answer is confidence-scored</h2>
+          <p>Archeon never bluffs. Each response is tagged so you know exactly how much to trust it — <strong>cited &gt; inferred &gt; unknown</strong>.</p>
+        </div>
+        <div class="tiers">
+          <div class="tier is-primary reveal">
+            <span class="tier-badge cited">[cited]</span>
+            <h3>Backed by evidence</h3>
+            <p>The answer is grounded in a recovered commit, PR, ADR, or issue. The strongest tier — you can click through to the source.</p>
+          </div>
+          <div class="tier reveal">
+            <span class="tier-badge inferred">[inferred]</span>
+            <h3>Synthesized from the graph</h3>
+            <p>A reasonable answer assembled from the decision graph, but with no single attributable source to cite.</p>
+          </div>
+          <div class="tier reveal">
+            <span class="tier-badge unknown">[unknown]</span>
+            <h3>An honest gap</h3>
+            <p>No memory was found. Archeon reports the gap instead of hallucinating an answer — a missing decision you can go document.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================== SOURCES ===== -->
+    <section class="section" id="sources">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Data sources</span>
+          <h2>One schema, many extractors</h2>
+          <p>Each source emits records matching <code>{source, content, metadata}</code>, chunked per source type before entering memory.</p>
+        </div>
+        <div class="sources-grid">
+          <div class="source-row reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg><div class="meta"><strong>Git commits</strong><span>cited</span></div></div>
+          <div class="source-row reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg><div class="meta"><strong>Pull requests</strong><span>cited</span></div></div>
+          <div class="source-row reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><div class="meta"><strong>Issues</strong><span>cited</span></div></div>
+          <div class="source-row reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><div class="meta"><strong>README sections</strong><span>cited</span></div></div>
+          <div class="source-row reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><div class="meta"><strong>ADRs &amp; docs</strong><span>cited</span></div></div>
+          <div class="source-row reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg><div class="meta"><strong>Code comments</strong><span>inferred</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================== QUICKSTART ===== -->
+    <section class="section" id="quickstart" style="background:var(--surface-2);border-block:1px solid var(--border);">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Quick start</span>
+          <h2>Up and running in four commands</h2>
+          <p>Requires Python 3.10+ and git. Point it at a repo and start asking why.</p>
+        </div>
+        <div class="quickstart-grid">
+          <div class="steps-list reveal">
+            <div class="li"><span class="n">1</span><div><b>Install</b><p>Clone and install with the Cognee extras.</p></div></div>
+            <div class="li"><span class="n">2</span><div><b>Check status</b><p>Confirm the CLI and Cognee surface are live.</p></div></div>
+            <div class="li"><span class="n">3</span><div><b>Ingest a repo</b><p>Extract history into the decision graph.</p></div></div>
+            <div class="li"><span class="n">4</span><div><b>Ask why</b><p>Query in natural language and get a cited answer.</p></div></div>
+          </div>
+          <div class="code-block reveal">
+            <div class="code-tabs">
+              <span class="code-tab active">terminal</span>
+            </div>
+<pre><code><span class="c"># 1 · install</span>
+git clone https://github.com/kishiagaytano/archeon.git
+cd archeon &amp;&amp; pip install -e <span class="p">".[cognee,lifecycle,dev]"</span>
+
+<span class="c"># 2 · verify</span>
+archeon status
+
+<span class="c"># 3 · ingest history → decision graph</span>
+archeon ingest demo/atlas-api
+
+<span class="c"># 4 · ask why</span>
+archeon why <span class="p">"why did we choose FastAPI over Flask?"</span></code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================== CTA ===== -->
+    <section class="section cta-band">
+      <div class="container">
+        <div class="cta-card reveal">
+          <span class="eyebrow">Stop losing the why</span>
+          <h2>Give your codebase a memory</h2>
+          <p>Archeon is open source. Ingest your history, then ask the questions your team has been guessing at for months.</p>
+          <div class="hero-cta">
+            <a class="btn btn-primary" href="https://github.com/kishiagaytano/archeon" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2A10 10 0 0 0 8.8 21.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.4-2.2-.2-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.3 4.8-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5A10 10 0 0 0 12 2Z"/></svg>
+              View on GitHub
+            </a>
+            <a class="btn btn-secondary" href="#quickstart">Read the quick start</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ========================================================= FOOTER ===== -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div>
+        <a href="#top" class="brand">
+          <svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"/></svg>
+          Archeon
+        </a>
+        <p class="muted" style="margin-top:8px;">Developer memory, powered by Cognee.</p>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/kishiagaytano/archeon" target="_blank" rel="noopener">GitHub</a>
+        <a href="#how">How it works</a>
+        <a href="#quickstart">Quick start</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>
